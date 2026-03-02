@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Environment & Secrets
+.env
+.env.local
+.env.production
+*.key.json
+service-account*.json
+
+# Build
+frontend/dist/
+*.egg-info/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pipeline artifacts
+pipeline/raw/
+pipeline/output/
+*.npy
+*.pkl
+
+# Large cached files
+*.json.bak
+graph_cache/

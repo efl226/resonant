@@ -1,0 +1,890 @@
+{
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Currents",
+      "artist": "Tame Impala",
+      "year": 2015,
+      "img": "https://upload.wikimedia.org/wikipedia/en/9/9b/Tame_Impala_-_Currents.png",
+      "visual_dna": {
+        "primary_color": "#9b59b6",
+        "palette": ["#9b59b6", "#8e44ad", "#2c3e50", "#ecf0f1", "#e74c3c"],
+        "texture": "Fluid Dynamics / Ball Bearing"
+      },
+      "sonic_dna": {
+        "bpm": 124,
+        "key": "D Major",
+        "energy": 0.78,
+        "prominent_instruments": ["Roland Juno-106", "Hofner Bass", "Phased Drums"]
+      },
+      "genetic_dna": {
+        "producer": "Kevin Parker",
+        "mixing_engineer": "Kevin Parker",
+        "studio": "Parker's Home Studio (Fremantle)"
+      },
+      "semantic_dna": {
+        "mood": "Introspective / Psychedelic",
+        "themes": ["Change", "Past Relationships", "Self-Improvement"],
+        "ai_summary": "A transitional record moving from guitar-heavy psych-rock to synthesizer-driven pop. The production emphasizes isolation, utilizing heavy panning and distinct 'dry' vocals."
+      }
+    },
+    {
+      "id": "2",
+      "name": "In Rainbows",
+      "artist": "Radiohead",
+      "year": 2007,
+      "img": "https://f4.bcbits.com/img/0031840962_10.jpg",
+      "visual_dna": {
+        "primary_color": "#e74c3c",
+        "palette": ["#e74c3c", "#f39c12", "#2c3e50", "#1abc9c", "#000000"],
+        "texture": "Paint Explosion / Space"
+      },
+      "sonic_dna": {
+        "bpm": 102,
+        "key": "A Minor",
+        "energy": 0.65,
+        "prominent_instruments": ["Ondes Martenot", "Gibson SG", "Arpeggiators"]
+      },
+      "genetic_dna": {
+        "producer": "Nigel Godrich",
+        "mixing_engineer": "Nigel Godrich",
+        "studio": "Tottenham House (Wiltshire)"
+      },
+      "semantic_dna": {
+        "mood": "Warm / Melancholy",
+        "themes": ["Mortality", "Love", "The Afterlife"],
+        "ai_summary": "Recorded live to capture natural reverb, this album minimizes compression to create dynamic 'breathing' room. It famously pioneered the 'pay-what-you-want' release model."
+      }
+    },
+    {
+      "id": "3",
+      "name": "To Pimp a Butterfly",
+      "artist": "Kendrick Lamar",
+      "year": 2015,
+      "img": "https://upload.wikimedia.org/wikipedia/en/f/f6/Kendrick_Lamar_-_To_Pimp_a_Butterfly.png",
+      "visual_dna": {
+        "primary_color": "#444444",
+        "palette": ["#000000", "#444444", "#ffffff", "#7f8c8d", "#2c3e50"],
+        "texture": "Monochrome / Gritty"
+      },
+      "sonic_dna": {
+        "bpm": 90,
+        "key": "G Minor",
+        "energy": 0.85,
+        "prominent_instruments": ["Saxophone (Kamasi Washington)", "Thundercat Bass", "Live Drums"]
+      },
+      "genetic_dna": {
+        "producer": "Sounwave / Flying Lotus",
+        "mixing_engineer": "Derek 'MixedByAli' Ali",
+        "studio": "No Excuses Studios (Santa Monica)"
+      },
+      "semantic_dna": {
+        "mood": "Aggressive / Jazz-Fusion",
+        "themes": ["Institutional Racism", "Fame", "Self-Love"],
+        "ai_summary": "A dense collage of funk, jazz, and spoken word. It rejects modern trap trends in favor of a live, chaotic soundscape inspired by Parliament-Funkadelic."
+      }
+    },
+    {
+      "id": "4",
+      "name": "Random Access Memories",
+      "artist": "Daft Punk",
+      "year": 2013,
+      "img": "https://m.media-amazon.com/images/I/61Ia07wdZQL._UF894,1000_QL80_.jpg",
+      "visual_dna": {
+        "primary_color": "#111111",
+        "palette": ["#000000", "#C0C0C0", "#FFD700", "#1c1c1c", "#333333"],
+        "texture": "Chrome / Glossy"
+      },
+      "sonic_dna": {
+        "bpm": 116,
+        "key": "B Minor",
+        "energy": 0.72,
+        "prominent_instruments": ["Modular Synthesizer", "Vintage Vocoders", "Nile Rodgers Guitar"]
+      },
+      "genetic_dna": {
+        "producer": "Thomas Bangalter / Guy-Manuel",
+        "mixing_engineer": "Mick Guzauski",
+        "studio": "Electric Lady Studios (NYC)"
+      },
+      "semantic_dna": {
+        "mood": "Nostalgic / Disco",
+        "themes": ["Human vs Machine", "Time", "Groove"],
+        "ai_summary": "A rejection of digital sampling in favor of live session musicians. It cost over $1M to produce, utilizing vintage tape machines to capture the warmth of the 1970s."
+      }
+    },
+    {
+      "id": "5",
+      "name": "Rumours",
+      "artist": "Fleetwood Mac",
+      "year": 1977,
+      "img": "https://upload.wikimedia.org/wikipedia/en/f/fb/FMacRumours.PNG",
+      "visual_dna": {
+        "primary_color": "#F5F5DC",
+        "palette": ["#F5F5DC", "#D2B48C", "#000000", "#555555", "#8B4513"],
+        "texture": "Matte / Vintage"
+      },
+      "sonic_dna": {
+        "bpm": 120,
+        "key": "F Major",
+        "energy": 0.60,
+        "prominent_instruments": ["Acoustic Guitar", "Hammond B3 Organ", "Three-Part Harmony"]
+      },
+      "genetic_dna": {
+        "producer": "Ken Caillat",
+        "mixing_engineer": "Ken Caillat",
+        "studio": "Record Plant (Sausalito)"
+      },
+      "semantic_dna": {
+        "mood": "Bittersweet / Pop",
+        "themes": ["Infidelity", "Breakups", "Resilience"],
+        "ai_summary": "Famous for its 'dry' production sound. The lack of reverb creates an intimate, 'in-the-room' feeling, contrasting sharply with the chaotic personal lives of the band members."
+      }
+    },
+    {
+      "id": "6",
+      "name": "Blond",
+      "artist": "Frank Ocean",
+      "year": 2016,
+      "img": "https://upload.wikimedia.org/wikipedia/en/a/a0/Blonde_-_Frank_Ocean.jpeg",
+      "visual_dna": {
+        "primary_color": "#aed6f1",
+        "palette": ["#aed6f1", "#2ecc71", "#ffffff", "#e74c3c", "#34495e"],
+        "texture": "Minimalist / Hazy"
+      },
+      "sonic_dna": {
+        "bpm": 68,
+        "key": "E Major",
+        "energy": 0.40,
+        "prominent_instruments": ["Pitch-Shifted Vocals", "Minimalist Guitar", "Wurlitzer Keys"]
+      },
+      "genetic_dna": {
+        "producer": "Frank Ocean / Malay",
+        "mixing_engineer": "Tom Elmhirst",
+        "studio": "Abbey Road Studios (London)"
+      },
+      "semantic_dna": {
+        "mood": "Dreamy / Isolated",
+        "themes": ["Youth", "Memory", "Sexuality"],
+        "ai_summary": "A masterclass in 'negative space.' The production strips away drums almost entirely, letting the voice carry the rhythm and emotional weight."
+      }
+    },
+    {
+      "id": "7",
+      "name": "Dark Side of the Moon",
+      "artist": "Pink Floyd",
+      "year": 1973,
+      "img": "https://upload.wikimedia.org/wikipedia/en/3/3b/Dark_Side_of_the_Moon.png",
+      "visual_dna": {
+        "primary_color": "#000000",
+        "palette": ["#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff"],
+        "texture": "Prism / Void"
+      },
+      "sonic_dna": {
+        "bpm": 118,
+        "key": "D Major",
+        "energy": 0.55,
+        "prominent_instruments": ["EMS VCS 3 Synth", "Tape Loops", "Saxophone"]
+      },
+      "genetic_dna": {
+        "producer": "Pink Floyd",
+        "mixing_engineer": "Alan Parsons",
+        "studio": "Abbey Road Studios (London)"
+      },
+      "semantic_dna": {
+        "mood": "Space Rock / Existential",
+        "themes": ["Madness", "Greed", "Time"],
+        "ai_summary": "A pioneering use of 'musique concrète' (using real-world sounds like clocks and cash registers) blended with analog synthesis. It remains a benchmark for high-fidelity audio testing."
+      }
+    },
+    {
+      "id": "8",
+      "name": "Nevermind",
+      "artist": "Nirvana",
+      "year": 1991,
+      "img": "https://upload.wikimedia.org/wikipedia/en/b/b7/NirvanaNevermindalbumcover.jpg",
+      "visual_dna": {
+        "primary_color": "#3498db",
+        "palette": ["#3498db", "#2980b9", "#1abc9c", "#ecf0f1", "#2c3e50"],
+        "texture": "Underwater / Distortion"
+      },
+      "sonic_dna": {
+        "bpm": 115,
+        "key": "F# Minor",
+        "energy": 0.95,
+        "prominent_instruments": ["Fender Jaguar", "Boss DS-1 Distortion", "Dave Grohl Drums"]
+      },
+      "genetic_dna": {
+        "producer": "Butch Vig",
+        "mixing_engineer": "Andy Wallace",
+        "studio": "Sound City (Van Nuys)"
+      },
+      "semantic_dna": {
+        "mood": "Angst / Explosive",
+        "themes": ["Apathy", "Rebellion", "Social Alienation"],
+        "ai_summary": "Defined the 'Loud-Quiet-Loud' dynamic. Butch Vig famously layered Cobain's vocals to create a thicker, more pop-accessible sound beneath the heavy grunge distortion."
+      }
+    },
+    {
+      "id": "9",
+      "name": "Homogenic",
+      "artist": "Björk",
+      "year": 1997,
+      "img": "https://upload.wikimedia.org/wikipedia/en/a/af/Bj%C3%B6rk_-_Homogenic.png",
+      "visual_dna": {
+        "primary_color": "#ecf0f1",
+        "palette": ["#ecf0f1", "#bdc3c7", "#e74c3c", "#8e44ad", "#2c3e50"],
+        "texture": "Silk / Glitch"
+      },
+      "sonic_dna": {
+        "bpm": 70,
+        "key": "C Minor",
+        "energy": 0.70,
+        "prominent_instruments": ["Icelandic String Octet", "Volcanic Beats", "Glass Harmonica"]
+      },
+      "genetic_dna": {
+        "producer": "Björk / Mark Bell",
+        "mixing_engineer": "Markus Dravs",
+        "studio": "El Cortijo (Spain)"
+      },
+      "semantic_dna": {
+        "mood": "Icy / Emotional",
+        "themes": ["Nature", "Technology", "National Identity"],
+        "ai_summary": "A fusion of organic strings and harsh electronic beats, designed to sound like 'rough volcanoes with soft moss.' It pioneered the 'chamber pop' electronic genre."
+      }
+    },
+    {
+      "id": "10",
+      "name": "Kind of Blue",
+      "artist": "Miles Davis",
+      "year": 1959,
+      "img": "https://cdn-p.smehost.net/sites/c5d2b1a28fd246bfafed3b8dbafc1352/wp-content/uploads/2014/12/Kind-Of-Blue-50th-Anniv-final-cover.jpg",
+      "visual_dna": {
+        "primary_color": "#2980b9",
+        "palette": ["#2980b9", "#34495e", "#bdc3c7", "#16a085", "#000000"],
+        "texture": "Smoke / Noir"
+      },
+      "sonic_dna": {
+        "bpm": 55,
+        "key": "D Dorian",
+        "energy": 0.30,
+        "prominent_instruments": ["Trumpet", "Alto Sax (Cannonball Adderley)", "Piano (Bill Evans)"]
+      },
+      "genetic_dna": {
+        "producer": "Teo Macero",
+        "mixing_engineer": "Fred Plaut",
+        "studio": "Columbia 30th Street Studio (NYC)"
+      },
+      "semantic_dna": {
+        "mood": "Cool / Modal",
+        "themes": ["Improvisation", "Simplicity", "Atmosphere"],
+        "ai_summary": "The definitive Modal Jazz album. Instead of complex chord changes, the band improvises over simple scales (modes), creating a sense of floating and timelessness."
+      }
+    },
+    {
+      "id": "11",
+      "name": "Demon Days",
+      "artist": "Gorillaz",
+      "year": 2005,
+      "img": "https://upload.wikimedia.org/wikipedia/en/d/df/Gorillaz_Demon_Days.PNG",
+      "visual_dna": {
+        "primary_color": "#2c3e50",
+        "palette": ["#2c3e50", "#e67e22", "#ecf0f1", "#95a5a6", "#c0392b"],
+        "texture": "Illustrated / Pop Art"
+      },
+      "sonic_dna": {
+        "bpm": 120,
+        "key": "C Major",
+        "energy": 0.75,
+        "prominent_instruments": ["Samples", "Bass Guitar", "String Section"]
+      },
+      "genetic_dna": {
+        "producer": "Danger Mouse",
+        "mixing_engineer": "Jason Cox",
+        "studio": "Kong Studios (Virtual)"
+      },
+      "semantic_dna": {
+        "mood": "Apocalyptic / Funky",
+        "themes": ["Isolation", "False Icons", "Environmental Decay"],
+        "ai_summary": "A dark pop masterpiece that blends hip-hop, dub, and electronica. Produced by Danger Mouse, it reflects a post-9/11 world through the lens of a virtual cartoon band."
+      }
+    },
+    {
+      "id": "12",
+      "name": "Abbey Road",
+      "artist": "The Beatles",
+      "year": 1969,
+      "img": "https://wdet.org/wp-content/uploads/2019/09/cri_000000319870.jpg",
+      "visual_dna": {
+        "primary_color": "#27ae60",
+        "palette": ["#27ae60", "#2c3e50", "#ffffff", "#3498db", "#95a5a6"],
+        "texture": "Urban / Natural"
+      },
+      "sonic_dna": {
+        "bpm": 80,
+        "key": "F Major",
+        "energy": 0.50,
+        "prominent_instruments": ["Moog Synthesizer", "Orchestra", "Leslie Speaker"]
+      },
+      "genetic_dna": {
+        "producer": "George Martin",
+        "mixing_engineer": "Geoff Emerick",
+        "studio": "Abbey Road Studios (London)"
+      },
+      "semantic_dna": {
+        "mood": "Nostalgic / Progressive",
+        "themes": ["Unity", "Endings", "Sunlight"],
+        "ai_summary": "The final time the Beatles recorded together. It features the famous 'Medley' on Side B, a suite of short, unfinished songs woven together into a symphonic climax."
+      }
+    },
+    {
+      "id": "13",
+      "name": "My Beautiful Dark Twisted Fantasy",
+      "artist": "Kanye West",
+      "year": 2010,
+      "img": "https://m.media-amazon.com/images/I/91dHRGIV65L._UF894,1000_QL80_.jpg",
+      "visual_dna": {
+        "primary_color": "#e74c3c",
+        "palette": ["#e74c3c", "#f1c40f", "#000000", "#ffffff", "#8e44ad"],
+        "texture": "Pixelated / Baroque"
+      },
+      "sonic_dna": {
+        "bpm": 95,
+        "key": "E Flat Major",
+        "energy": 0.90,
+        "prominent_instruments": ["Drum Machine", "Samples", "Cello"]
+      },
+      "genetic_dna": {
+        "producer": "Kanye West / Mike Dean",
+        "mixing_engineer": "Mike Dean",
+        "studio": "Avemex Sound (Honolulu)"
+      },
+      "semantic_dna": {
+        "mood": "Grandioise / Manic",
+        "themes": ["Ego", "Fame", "Redemption"],
+        "ai_summary": "A maximalist hip-hop opera. It combines gritty RZA production with orchestral arrangements, exploring the excess of celebrity culture."
+      }
+    },
+    {
+      "id": "14",
+      "name": "22, A Million",
+      "artist": "Bon Iver",
+      "year": 2016,
+      "img": "https://m.media-amazon.com/images/I/71pGwd2qyWL._UF1000,1000_QL80_.jpg",
+      "visual_dna": {
+        "primary_color": "#bdc3c7",
+        "palette": ["#bdc3c7", "#e74c3c", "#000000", "#f39c12", "#ffffff"],
+        "texture": "Glitch / Symbology"
+      },
+      "sonic_dna": {
+        "bpm": 60,
+        "key": "F# Major",
+        "energy": 0.35,
+        "prominent_instruments": ["Messina (Prismizer)", "Saxophone", "Samples"]
+      },
+      "genetic_dna": {
+        "producer": "Justin Vernon",
+        "mixing_engineer": "BJ Burton",
+        "studio": "April Base (Wisconsin)"
+      },
+      "semantic_dna": {
+        "mood": "Fragmented / Spiritual",
+        "themes": ["Numerology", "Anxiety", "Faith"],
+        "ai_summary": "A radical departure from folk, using the 'Messina' instrument to harmonize vocals into a polyphonic choir. The song titles use symbols and numbers to reflect digital confusion."
+      }
+    },
+    {
+      "id": "15",
+      "name": "Dummy",
+      "artist": "Portishead",
+      "year": 1994,
+      "img": "https://upload.wikimedia.org/wikipedia/en/thumb/6/6b/Portishead_-_Dummy.png/250px-Portishead_-_Dummy.png",
+      "visual_dna": {
+        "primary_color": "#34495e",
+        "palette": ["#34495e", "#2980b9", "#000000", "#95a5a6", "#7f8c8d"],
+        "texture": "Film Noir / VHS"
+      },
+      "sonic_dna": {
+        "bpm": 80,
+        "key": "E Minor",
+        "energy": 0.45,
+        "prominent_instruments": ["Turntables", "Fender Rhodes", "Theremin"]
+      },
+      "genetic_dna": {
+        "producer": "Portishead",
+        "mixing_engineer": "Dave McDonald",
+        "studio": "State of Art (Bristol)"
+      },
+      "semantic_dna": {
+        "mood": "Haunting / Cinematic",
+        "themes": ["Despair", "Spy Movies", "Loneliness"],
+        "ai_summary": "The defining Trip-Hop album. It blends Isaac Hayes samples with hip-hop breakbeats and spy-movie aesthetics, creating a uniquely British noir atmosphere."
+      }
+    },
+    {
+      "id": "16",
+      "name": "Remain in Light",
+      "artist": "Talking Heads",
+      "year": 1980,
+      "img": "https://m.media-amazon.com/images/I/81m509vvPbL._UF1000,1000_QL80_.jpg",
+      "visual_dna": {
+        "primary_color": "#c0392b",
+        "palette": ["#c0392b", "#3498db", "#f1c40f", "#000000", "#ecf0f1"],
+        "texture": "Digitized / Mask"
+      },
+      "sonic_dna": {
+        "bpm": 130,
+        "key": "D Major",
+        "energy": 0.88,
+        "prominent_instruments": ["Polyrhythmic Drums", "Funk Bass", "Synthesizer"]
+      },
+      "genetic_dna": {
+        "producer": "Brian Eno",
+        "mixing_engineer": "Dave Jerden",
+        "studio": "Compass Point (Bahamas)"
+      },
+      "semantic_dna": {
+        "mood": "Anxious / Danceable",
+        "themes": ["Information Overload", "Identity", "Afrobeat"],
+        "ai_summary": "Heavily influenced by Fela Kuti, this album utilizes 'loops' played by humans. It deconstructs the rock band format into a dense, polyrhythmic funk machine."
+      }
+    },
+    {
+      "id": "17",
+      "name": "IGOR",
+      "artist": "Tyler, The Creator",
+      "year": 2019,
+      "img": "https://upload.wikimedia.org/wikipedia/en/5/51/Igor_-_Tyler%2C_the_Creator.jpg",
+      "visual_dna": {
+        "primary_color": "#ff69b4",
+        "palette": ["#ff69b4", "#000000", "#ffffff", "#333333", "#ffb7b2"],
+        "texture": "Raw / Pastel"
+      },
+      "sonic_dna": {
+        "bpm": 78,
+        "key": "E Minor",
+        "energy": 0.70,
+        "prominent_instruments": ["Rough Synths", "Pitch-Shifted Vocals", "Breakbeats"]
+      },
+      "genetic_dna": {
+        "producer": "Tyler, The Creator",
+        "mixing_engineer": "Neal Pogue",
+        "studio": "Conway Recording Studios (LA)"
+      },
+      "semantic_dna": {
+        "mood": "Heartbroken / Manic",
+        "themes": ["Love Triangle", "Letting Go", "Villainy"],
+        "ai_summary": "A breakup album disguised as a horror movie. Tyler handles all production, using distorted synths and singing (rather than rapping) to convey raw vulnerability."
+      }
+    },
+    {
+      "id": "18",
+      "name": "Bloom",
+      "artist": "Beach House",
+      "year": 2012,
+      "img": "https://upload.wikimedia.org/wikipedia/en/a/a2/Beach_House_-_Bloom.png",
+      "visual_dna": {
+        "primary_color": "#000000",
+        "palette": ["#000000", "#ecf0f1", "#95a5a6", "#bdc3c7", "#34495e"],
+        "texture": "Stars / Grain"
+      },
+      "sonic_dna": {
+        "bpm": 84,
+        "key": "C Major",
+        "energy": 0.50,
+        "prominent_instruments": ["Yamaha PS-20", "Slide Guitar", "Drum Machine"]
+      },
+      "genetic_dna": {
+        "producer": "Chris Coady",
+        "mixing_engineer": "Chris Coady",
+        "studio": "Sonic Ranch (Texas)"
+      },
+      "semantic_dna": {
+        "mood": "Ethereal / Endless",
+        "themes": ["Cycles", "Memory", "Loss"],
+        "ai_summary": "A defining Dream Pop record. The production is intentionally hazy and reverb-drenched, designed to sound like a memory that is slowly fading away."
+      }
+    },
+    {
+      "id": "19",
+      "name": "Is This It",
+      "artist": "The Strokes",
+      "year": 2001,
+      "img": "https://upload.wikimedia.org/wikipedia/en/thumb/e/e7/The_Strokes_-_Ist_Tis_It_US_cover.png/250px-The_Strokes_-_Ist_Tis_It_US_cover.png",
+      "visual_dna": {
+        "primary_color": "#000000",
+        "palette": ["#000000", "#ffffff", "#555555", "#888888", "#222222"],
+        "texture": "Leather / Particle"
+      },
+      "sonic_dna": {
+        "bpm": 140,
+        "key": "A Major",
+        "energy": 0.90,
+        "prominent_instruments": ["Intertwined Guitars", "Distorted Vocals", "Tight Drums"]
+      },
+      "genetic_dna": {
+        "producer": "Gordon Raphael",
+        "mixing_engineer": "Gordon Raphael",
+        "studio": "Transporterraum (NYC)"
+      },
+      "semantic_dna": {
+        "mood": "Cool / Apathetic",
+        "themes": ["NYC Nightlife", "Youth", "Boredom"],
+        "ai_summary": "Ignited the 2000s Garage Rock revival. Recorded to look and sound 'like it was from the past that took a time machine into the future.' Vocals were recorded through a small practice amp."
+      }
+    },
+    {
+      "id": "20",
+      "name": "What's Going On",
+      "artist": "Marvin Gaye",
+      "year": 1971,
+      "img": "https://upload.wikimedia.org/wikipedia/en/thumb/8/84/MarvinGayeWhat%27sGoingOnalbumcover.jpg/250px-MarvinGayeWhat%27sGoingOnalbumcover.jpg",
+      "visual_dna": {
+        "primary_color": "#2c3e50",
+        "palette": ["#2c3e50", "#27ae60", "#f1c40f", "#000000", "#ecf0f1"],
+        "texture": "Rain / Portrait"
+      },
+      "sonic_dna": {
+        "bpm": 92,
+        "key": "E Major",
+        "energy": 0.45,
+        "prominent_instruments": ["Strings", "Bongos", "Layered Vocals"]
+      },
+      "genetic_dna": {
+        "producer": "Marvin Gaye",
+        "mixing_engineer": "Lawrence Miles",
+        "studio": "Hitsville U.S.A. (Detroit)"
+      },
+      "semantic_dna": {
+        "mood": "Soulful / Political",
+        "themes": ["War", "Ecology", "Poverty"],
+        "ai_summary": "A concept album told from the perspective of a Vietnam veteran returning home. It broke the Motown mold by addressing social issues directly and flowing seamlessly from track to track."
+      }
+    },
+    {
+      "id": "21",
+      "name": "The Velvet Underground & Nico",
+      "artist": "The Velvet Underground",
+      "year": 1967,
+      "img": "https://m.media-amazon.com/images/I/71H2+Sj3wmL._UF1000,1000_QL80_.jpg",
+      "visual_dna": {
+        "primary_color": "#f1c40f",
+        "palette": ["#f1c40f", "#000000", "#ffffff", "#e6e6e6", "#333333"],
+        "texture": "Pop Art / Banana"
+      },
+      "sonic_dna": {
+        "bpm": 110,
+        "key": "G Major",
+        "energy": 0.60,
+        "prominent_instruments": ["Viola Drone", "Ostrich Guitar", "German Vocals"]
+      },
+      "genetic_dna": {
+        "producer": "Andy Warhol / Tom Wilson",
+        "mixing_engineer": "Tom Wilson",
+        "studio": "Scepter Studios (NYC)"
+      },
+      "semantic_dna": {
+        "mood": "Avant-Garde / Gritty",
+        "themes": ["Drug Culture", "Femme Fatale", "Urban Decay"],
+        "ai_summary": "Produced by Andy Warhol, this album birthed Art Rock. It combined Lou Reed's street poetry with John Cale's avant-garde drones, influencing punk and new wave decades later."
+      }
+    },
+    {
+      "id": "22",
+      "name": "Mezzanine",
+      "artist": "Massive Attack",
+      "year": 1998,
+      "img": "https://upload.wikimedia.org/wikipedia/en/e/e9/Massive_Attack_-_Mezzanine.png",
+      "visual_dna": {
+        "primary_color": "#2c3e50",
+        "palette": ["#2c3e50", "#000000", "#e67e22", "#95a5a6", "#34495e"],
+        "texture": "Insect / Dark"
+      },
+      "sonic_dna": {
+        "bpm": 80,
+        "key": "C Minor",
+        "energy": 0.55,
+        "prominent_instruments": ["Deep Bass", "Samples", "Whispered Vocals"]
+      },
+      "genetic_dna": {
+        "producer": "Massive Attack / Neil Davidge",
+        "mixing_engineer": "Neil Davidge",
+        "studio": "Massive Attack Studios (Bristol)"
+      },
+      "semantic_dna": {
+        "mood": "Claustrophobic / Dark",
+        "themes": ["Paranoia", "Intimacy", "Tension"],
+        "ai_summary": "A dark masterpiece of Trip-Hop. It moved away from 'jazz' samples towards post-punk textures, utilizing heavy, distorted bass and atmospheric dread."
+      }
+    },
+    {
+      "id": "23",
+      "name": "Selected Ambient Works 85-92",
+      "artist": "Aphex Twin",
+      "year": 1992,
+      "img": "https://upload.wikimedia.org/wikipedia/en/8/82/Selected_Ambient_Works_85-92.png",
+      "visual_dna": {
+        "primary_color": "#d35400",
+        "palette": ["#d35400", "#f39c12", "#000000", "#e67e22", "#2c3e50"],
+        "texture": "Symbol / Grainy"
+      },
+      "sonic_dna": {
+        "bpm": 125,
+        "key": "Variable",
+        "energy": 0.65,
+        "prominent_instruments": ["Analog Synths", "Tape Distortion", "Drum Machines"]
+      },
+      "genetic_dna": {
+        "producer": "Richard D. James",
+        "mixing_engineer": "Richard D. James",
+        "studio": "Bedroom Studio (Cornwall)"
+      },
+      "semantic_dna": {
+        "mood": "Otherworldly / Warm",
+        "themes": ["Dreams", "Technology", "Isolation"],
+        "ai_summary": "Created on custom-built equipment, this album defined IDM. Despite being 'Ambient,' it features complex, danceable rhythms beneath the lush, distorted synth pads."
+      }
+    },
+    {
+      "id": "24",
+      "name": "Funeral",
+      "artist": "Arcade Fire",
+      "year": 2004,
+      "img": "https://upload.wikimedia.org/wikipedia/en/2/25/ArcadeFireFuneralCover.jpg",
+      "visual_dna": {
+        "primary_color": "#ecf0f1",
+        "palette": ["#ecf0f1", "#bdc3c7", "#e74c3c", "#34495e", "#95a5a6"],
+        "texture": "Paper / Hand-Drawn"
+      },
+      "sonic_dna": {
+        "bpm": 120,
+        "key": "A Major",
+        "energy": 0.80,
+        "prominent_instruments": ["Accordion", "Violin", "Group Vocals"]
+      },
+      "genetic_dna": {
+        "producer": "Arcade Fire",
+        "mixing_engineer": "Mark Lawson",
+        "studio": "Hotel2Tango (Montreal)"
+      },
+      "semantic_dna": {
+        "mood": "Anthemic / Emotional",
+        "themes": ["Grief", "Community", "Childhood"],
+        "ai_summary": "An indie-rock epic centered around death and rebirth. The massive, orchestral arrangements and shouted group vocals create a sense of urgent, communal catharsis."
+      }
+    },
+    {
+      "id": "25",
+      "name": "The Rise and Fall of Ziggy Stardust",
+      "artist": "David Bowie",
+      "year": 1972,
+      "img": "https://upload.wikimedia.org/wikipedia/en/0/01/ZiggyStardust.jpg",
+      "visual_dna": {
+        "primary_color": "#e67e22",
+        "palette": ["#e67e22", "#2c3e50", "#2980b9", "#f1c40f", "#000000"],
+        "texture": "Urban / Rain"
+      },
+      "sonic_dna": {
+        "bpm": 110,
+        "key": "G Major",
+        "energy": 0.70,
+        "prominent_instruments": ["12-String Guitar", "Piano", "String Arrangements"]
+      },
+      "genetic_dna": {
+        "producer": "David Bowie / Ken Scott",
+        "mixing_engineer": "Ken Scott",
+        "studio": "Trident Studios (London)"
+      },
+      "semantic_dna": {
+        "mood": "Theatrical / Glam",
+        "themes": ["Stardom", "Apocalypse", "Identity"],
+        "ai_summary": "A concept album about an alien rock star. It defined Glam Rock, blending hard rock riffs with theatrical pop sensibilities and exploring fluid sexuality."
+      }
+    },
+    {
+      "id": "26",
+      "name": "Straight Outta Compton",
+      "artist": "N.W.A",
+      "year": 1988,
+      "img": "https://upload.wikimedia.org/wikipedia/en/8/84/StraightOuttaComptonN.W.A..jpg",
+      "visual_dna": {
+        "primary_color": "#000000",
+        "palette": ["#000000", "#ffffff", "#333333", "#555555", "#111111"],
+        "texture": "Street / Contrast"
+      },
+      "sonic_dna": {
+        "bpm": 100,
+        "key": "A Minor",
+        "energy": 0.95,
+        "prominent_instruments": ["Turntables", "Drum Breaks", "Sirens"]
+      },
+      "genetic_dna": {
+        "producer": "Dr. Dre / Yella",
+        "mixing_engineer": "Donovan Sound",
+        "studio": "Audio Achievements (Torrance)"
+      },
+      "semantic_dna": {
+        "mood": "Raw / Aggressive",
+        "themes": ["Police Brutality", "Street Life", "Censorship"],
+        "ai_summary": "The album that popularized Gangsta Rap. Dr. Dre's production layered funky drum breaks with screeching noises, creating a chaotic backdrop for Ice Cube's storytelling."
+      }
+    },
+    {
+      "id": "27",
+      "name": "Unknown Pleasures",
+      "artist": "Joy Division",
+      "year": 1979,
+      "img": "https://images.radiox.co.uk/images/56569?width=1200&crop=1_1&signature=PON_iS7KoPXY75NNA8OetEbHD_Y=",
+      "visual_dna": {
+        "primary_color": "#000000",
+        "palette": ["#000000", "#ffffff", "#1a1a1a", "#333333", "#4d4d4d"],
+        "texture": "Data Plot / Void"
+      },
+      "sonic_dna": {
+        "bpm": 140,
+        "key": "E Minor",
+        "energy": 0.75,
+        "prominent_instruments": ["Chorus Bass", "Digital Drums", "Synthesizer"]
+      },
+      "genetic_dna": {
+        "producer": "Martin Hannett",
+        "mixing_engineer": "Martin Hannett",
+        "studio": "Strawberry Studios (Stockport)"
+      },
+      "semantic_dna": {
+        "mood": "Desolate / Industrial",
+        "themes": ["Urban Decay", "Epilepsy", "Isolation"],
+        "ai_summary": "Defined the Post-Punk sound. Martin Hannett's production treated each instrument as a separate entity, using digital delays to create a cavernous, empty space."
+      }
+    },
+    {
+      "id": "28",
+      "name": "Purple Rain",
+      "artist": "Prince",
+      "year": 1984,
+      "img": "https://upload.wikimedia.org/wikipedia/en/9/9c/Princepurplerain.jpg",
+      "visual_dna": {
+        "primary_color": "#8e44ad",
+        "palette": ["#8e44ad", "#000000", "#ffffff", "#e74c3c", "#f39c12"],
+        "texture": "Smoke / Motorcycle"
+      },
+      "sonic_dna": {
+        "bpm": 110,
+        "key": "B Flat Major",
+        "energy": 0.85,
+        "prominent_instruments": ["LinnDrum", "Electric Guitar", "Synthesizer"]
+      },
+      "genetic_dna": {
+        "producer": "Prince",
+        "mixing_engineer": "Prince",
+        "studio": "Sunset Sound (Hollywood)"
+      },
+      "semantic_dna": {
+        "mood": "Electric / Passionate",
+        "themes": ["Love", "Spirituality", "Desire"],
+        "ai_summary": "A fusion of rock, R&B, and pop. It features the distinctive 'LinnDrum' sound and Prince's shredding guitar solos, creating a dense, cinematic soundscape."
+      }
+    },
+    {
+      "id": "29",
+      "name": "Diamond Life",
+      "artist": "Sade",
+      "year": 1984,
+      "img": "https://m.media-amazon.com/images/I/71T3-lHvXxL._UF1000,1000_QL80_.jpg",
+      "visual_dna": {
+        "primary_color": "#d35400",
+        "palette": ["#d35400", "#ecf0f1", "#000000", "#e67e22", "#2c3e50"],
+        "texture": "Smooth / Portrait"
+      },
+      "sonic_dna": {
+        "bpm": 85,
+        "key": "D Minor",
+        "energy": 0.40,
+        "prominent_instruments": ["Saxophone", "Bass Guitar", "Smooth Vocals"]
+      },
+      "genetic_dna": {
+        "producer": "Robin Millar",
+        "mixing_engineer": "Mike Pela",
+        "studio": "The Power Plant (London)"
+      },
+      "semantic_dna": {
+        "mood": "Sophisticated / Smooth",
+        "themes": ["Romance", "Luxury", "Heartbreak"],
+        "ai_summary": "The epitome of 'Sophisti-pop.' It blends soul, jazz, and R&B into a seamless, high-fidelity package. The production is pristine, emphasizing space and clarity."
+      }
+    },
+    {
+      "id": "30",
+      "name": "Fleet Foxes",
+      "artist": "Fleet Foxes",
+      "year": 2008,
+      "img": "https://upload.wikimedia.org/wikipedia/en/thumb/0/01/Fleet_foxes.jpg/250px-Fleet_foxes.jpg",
+      "visual_dna": {
+        "primary_color": "#d35400",
+        "palette": ["#d35400", "#f1c40f", "#27ae60", "#2c3e50", "#e67e22"],
+        "texture": "Painting / Renaissance"
+      },
+      "sonic_dna": {
+        "bpm": 110,
+        "key": "E Major",
+        "energy": 0.55,
+        "prominent_instruments": ["Acoustic Guitar", "Four-Part Harmony", "Reverb"]
+      },
+      "genetic_dna": {
+        "producer": "Phil Ek",
+        "mixing_engineer": "Phil Ek",
+        "studio": "Reciprocal Recording (Seattle)"
+      },
+      "semantic_dna": {
+        "mood": "Pastoral / Folk",
+        "themes": ["Nature", "Family", "Winter"],
+        "ai_summary": "A revival of baroque folk-pop. The massive reverb (recorded in churches) and dense vocal harmonies evoke a timeless, almost medieval atmosphere."
+      }
+    }
+  ],
+  "links": [
+    { "source": "1", "target": "4", "reason": "Shared 'Retro-Future' Aesthetic & Vocoder Usage" },
+    { "source": "2", "target": "1", "reason": "High 'Melancholy' Score & Falsetto Vocals" },
+    { "source": "3", "target": "10", "reason": "Direct Jazz Influence & Saxophone Usage" },
+    { "source": "4", "target": "5", "reason": "West Coast 'Yacht Rock' Production Influence" },
+    { "source": "5", "target": "2", "reason": "Focus on 'Dry' Room Sound & Interpersonal Tension" },
+    { "source": "6", "target": "2", "reason": "Minimalist Arrangement & Emotional Vulnerability" },
+    { "source": "7", "target": "4", "reason": "Concept Album Structure & Analog Synth Usage" },
+    { "source": "8", "target": "1", "reason": "Heavy Phasing Effects on Drums" },
+    { "source": "9", "target": "2", "reason": "Fusion of Orchestral & Electronic Elements" },
+    { "source": "10", "target": "6", "reason": "Mood: 'Late Night' & Avant-Garde Structure" },
+    { "source": "7", "target": "12", "reason": "Recorded at Abbey Road Studios" },
+    { "source": "11", "target": "4", "reason": "Animated Identities & Electronic Pop" },
+    { "source": "11", "target": "3", "reason": "Collaborative Hip-Hop/Pop Fusion" },
+    { "source": "13", "target": "14", "reason": "Vocoder Experimentation & Collaboration" },
+    { "source": "13", "target": "3", "reason": "Maximalist Hip-Hop Production" },
+    { "source": "14", "target": "6", "reason": "Abstract Song Structures" },
+    { "source": "15", "target": "9", "reason": "90s Trip-Hop Influence" },
+    { "source": "16", "target": "2", "reason": "Art Rock & Polyrhythms" },
+    { "source": "17", "target": "1", "reason": "Synth-Heavy Production & Auteurship" },
+    { "source": "17", "target": "6", "reason": "Odd Future Collective Connection" },
+    { "source": "18", "target": "1", "reason": "Dream Pop Textures" },
+    { "source": "19", "target": "8", "reason": "Raw Rock Energy" },
+    { "source": "19", "target": "4", "reason": "Julian Casablancas Collaboration" },
+    { "source": "20", "target": "3", "reason": "Socially Conscious Concept Albums" },
+    { "source": "12", "target": "1", "reason": "Psychedelic Pop Songwriting" },
+    { "source": "21", "target": "19", "reason": "NYC Art Rock Lineage" },
+    { "source": "21", "target": "16", "reason": "Avant-Garde Art School Origins" },
+    { "source": "22", "target": "15", "reason": "Bristol Trip-Hop Scene" },
+    { "source": "22", "target": "2", "reason": "Dark Electronic Textures" },
+    { "source": "23", "target": "4", "reason": "Pioneers of Electronic Production" },
+    { "source": "23", "target": "2", "reason": "Thom Yorke's Electronic Influence" },
+    { "source": "24", "target": "12", "reason": "Orchestral Pop Ambition" },
+    { "source": "24", "target": "25", "reason": "Theatrical Rock Performance" },
+    { "source": "25", "target": "12", "reason": "British Rock Iconography" },
+    { "source": "25", "target": "28", "reason": "Androgynous Pop Icons" },
+    { "source": "26", "target": "3", "reason": "Compton Hip-Hop Lineage" },
+    { "source": "27", "target": "19", "reason": "Post-Punk Revival Influence" },
+    { "source": "27", "target": "2", "reason": "Atmospheric Gloom" },
+    { "source": "28", "target": "6", "reason": "R&B Auteurship" },
+    { "source": "28", "target": "4", "reason": "Funk/Disco Heritage" },
+    { "source": "29", "target": "20", "reason": "Smooth Soul & Social Commentary" },
+    { "source": "29", "target": "10", "reason": "Quiet Storm / Jazz Influence" },
+    { "source": "30", "target": "14", "reason": "Indie Folk Roots" },
+    { "source": "30", "target": "12", "reason": "Vocal Harmony Focus" }
+  ]
+}

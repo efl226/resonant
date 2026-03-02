@@ -1,0 +1,836 @@
+{
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Let It Happen",
+      "artist": "Tame Impala",
+      "album": "Currents",
+      "year": 2015,
+      "img": "https://upload.wikimedia.org/wikipedia/en/9/9b/Tame_Impala_-_Currents.png",
+      "visual_dna": {
+        "primary_color": "#9b59b6",
+        "palette": ["#9b59b6", "#8e44ad", "#2c3e50", "#ecf0f1", "#e74c3c"],
+        "texture": "Fluid Dynamics / Ball Bearing"
+      },
+      "sonic_dna": {
+        "bpm": 116,
+        "key": "C# Minor",
+        "energy": 0.82,
+        "duration": "7:46",
+        "prominent_instruments": ["Roland Juno-106", "Phased Drums", "Vocoder", "Tape Loops"]
+      },
+      "genetic_dna": {
+        "producer": "Kevin Parker",
+        "songwriter": "Kevin Parker",
+        "mixing_engineer": "Kevin Parker",
+        "studio": "Parker's Home Studio (Fremantle)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Euphoric / Psychedelic",
+        "themes": ["Surrender", "Change", "Letting Go"],
+        "ai_summary": "A 7-minute odyssey that builds through glitchy tape-loop breakdowns into a massive synth climax. The stuttering mid-section mimics a skipping CD, symbolizing the resistance to change before acceptance washes over."
+      }
+    },
+    {
+      "id": "2",
+      "name": "Reckoner",
+      "artist": "Radiohead",
+      "album": "In Rainbows",
+      "year": 2007,
+      "img": "https://f4.bcbits.com/img/0031840962_10.jpg",
+      "visual_dna": {
+        "primary_color": "#e74c3c",
+        "palette": ["#e74c3c", "#f39c12", "#2c3e50", "#1abc9c", "#000000"],
+        "texture": "Paint Explosion / Space"
+      },
+      "sonic_dna": {
+        "bpm": 128,
+        "key": "A Major",
+        "energy": 0.58,
+        "duration": "4:50",
+        "prominent_instruments": ["Shaker", "Falsetto Vocals", "Reversed Guitar", "Ondes Martenot"]
+      },
+      "genetic_dna": {
+        "producer": "Nigel Godrich",
+        "songwriter": "Radiohead",
+        "mixing_engineer": "Nigel Godrich",
+        "studio": "Tottenham House (Wiltshire)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Transcendent / Warm",
+        "themes": ["Mortality", "Reckoning", "Grace"],
+        "ai_summary": "Built on polyrhythmic percussion and Thom Yorke's ethereal falsetto. The song's warmth is rare for Radiohead — layers of reversed guitar and strings dissolve into an almost spiritual finale."
+      }
+    },
+    {
+      "id": "3",
+      "name": "Alright",
+      "artist": "Kendrick Lamar",
+      "album": "To Pimp a Butterfly",
+      "year": 2015,
+      "img": "https://upload.wikimedia.org/wikipedia/en/f/f6/Kendrick_Lamar_-_To_Pimp_a_Butterfly.png",
+      "visual_dna": {
+        "primary_color": "#444444",
+        "palette": ["#000000", "#444444", "#ffffff", "#7f8c8d", "#2c3e50"],
+        "texture": "Monochrome / Gritty"
+      },
+      "sonic_dna": {
+        "bpm": 111,
+        "key": "F Minor",
+        "energy": 0.87,
+        "duration": "3:39",
+        "prominent_instruments": ["Live Drums", "Saxophone", "Synth Bass", "Vocal Chants"]
+      },
+      "genetic_dna": {
+        "producer": "Pharrell Williams / Sounwave",
+        "songwriter": "Kendrick Lamar / Pharrell Williams",
+        "mixing_engineer": "Derek 'MixedByAli' Ali",
+        "studio": "No Excuses Studios (Santa Monica)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Defiant / Hopeful",
+        "themes": ["Institutional Racism", "Resilience", "Protest"],
+        "ai_summary": "Became a protest anthem for the Black Lives Matter movement. Pharrell's minimalist beat underpins Kendrick's rapid-fire flow, building to the iconic chant that transcended the album."
+      }
+    },
+    {
+      "id": "4",
+      "name": "Get Lucky",
+      "artist": "Daft Punk",
+      "album": "Random Access Memories",
+      "year": 2013,
+      "img": "https://m.media-amazon.com/images/I/61Ia07wdZQL._UF894,1000_QL80_.jpg",
+      "visual_dna": {
+        "primary_color": "#FFD700",
+        "palette": ["#000000", "#C0C0C0", "#FFD700", "#1c1c1c", "#333333"],
+        "texture": "Chrome / Glossy"
+      },
+      "sonic_dna": {
+        "bpm": 116,
+        "key": "F# Minor",
+        "energy": 0.74,
+        "duration": "6:09",
+        "prominent_instruments": ["Nile Rodgers Guitar", "Vintage Vocoder", "Live Bass", "Disco Strings"]
+      },
+      "genetic_dna": {
+        "producer": "Thomas Bangalter / Guy-Manuel",
+        "songwriter": "Daft Punk / Nile Rodgers / Pharrell Williams",
+        "mixing_engineer": "Mick Guzauski",
+        "studio": "Electric Lady Studios (NYC)",
+        "featuring": "Pharrell Williams / Nile Rodgers"
+      },
+      "semantic_dna": {
+        "mood": "Nostalgic / Groovy",
+        "themes": ["Seduction", "Night Life", "Human Connection"],
+        "ai_summary": "A masterclass in restraint. Nile Rodgers' instantly recognizable guitar riff anchors a four-chord loop that hypnotizes over six minutes, proving that simplicity and repetition can be transcendent."
+      }
+    },
+    {
+      "id": "5",
+      "name": "Dreams",
+      "artist": "Fleetwood Mac",
+      "album": "Rumours",
+      "year": 1977,
+      "img": "https://upload.wikimedia.org/wikipedia/en/f/fb/FMacRumworthy.png",
+      "visual_dna": {
+        "primary_color": "#d4a373",
+        "palette": ["#d4a373", "#000000", "#f5f5dc", "#8b4513", "#2c3e50"],
+        "texture": "Velvet / Warm Grain"
+      },
+      "sonic_dna": {
+        "bpm": 120,
+        "key": "F Major",
+        "energy": 0.55,
+        "duration": "4:14",
+        "prominent_instruments": ["Fender Stratocaster", "Fender Rhodes", "Congas", "Layered Vocals"]
+      },
+      "genetic_dna": {
+        "producer": "Ken Caillat / Richard Dashut",
+        "songwriter": "Stevie Nicks",
+        "mixing_engineer": "Ken Caillat",
+        "studio": "Record Plant (Sausalito)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Melancholy / Hypnotic",
+        "themes": ["Heartbreak", "Premonition", "Moving On"],
+        "ai_summary": "Written by Stevie Nicks in ten minutes on a Fender Rhodes during the band's interpersonal collapse. The sparse, hypnotic groove became a viral sensation decades later on TikTok, proving the song's timeless pull."
+      }
+    },
+    {
+      "id": "6",
+      "name": "Solo",
+      "artist": "Frank Ocean",
+      "album": "Blonde",
+      "year": 2016,
+      "img": "https://upload.wikimedia.org/wikipedia/en/a/a0/Blonde_-_Frank_Ocean.jpeg",
+      "visual_dna": {
+        "primary_color": "#27ae60",
+        "palette": ["#27ae60", "#2ecc71", "#ecf0f1", "#bdc3c7", "#2c3e50"],
+        "texture": "Overexposed / Grain"
+      },
+      "sonic_dna": {
+        "bpm": 81,
+        "key": "D Major",
+        "energy": 0.35,
+        "duration": "4:17",
+        "prominent_instruments": ["Organ", "Vocal Layers", "Minimal Keys"]
+      },
+      "genetic_dna": {
+        "producer": "Frank Ocean",
+        "songwriter": "Frank Ocean",
+        "mixing_engineer": "Tom Elmhirst",
+        "studio": "Capitol Studios (Hollywood)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Introspective / Lonely",
+        "themes": ["Isolation", "Self-Reliance", "Drug Use"],
+        "ai_summary": "Stripped to its barest elements — just an organ and Ocean's voice. The production deliberately removes drums, letting the vocal phrasing carry the rhythm and leaving the listener suspended in space."
+      }
+    },
+    {
+      "id": "7",
+      "name": "Time",
+      "artist": "Pink Floyd",
+      "album": "The Dark Side of the Moon",
+      "year": 1973,
+      "img": "https://upload.wikimedia.org/wikipedia/en/3/3b/Dark_Side_of_the_Moon.png",
+      "visual_dna": {
+        "primary_color": "#000000",
+        "palette": ["#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff"],
+        "texture": "Prism / Void"
+      },
+      "sonic_dna": {
+        "bpm": 120,
+        "key": "F# Minor",
+        "energy": 0.68,
+        "duration": "6:53",
+        "prominent_instruments": ["Roto-Toms", "EMS VCS 3 Synth", "Lap Steel Guitar", "Clocks (Musique Concrète)"]
+      },
+      "genetic_dna": {
+        "producer": "Pink Floyd",
+        "songwriter": "Roger Waters / David Gilmour / Nick Mason / Richard Wright",
+        "mixing_engineer": "Alan Parsons",
+        "studio": "Abbey Road Studios (London)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Existential / Epic",
+        "themes": ["Wasted Time", "Mortality", "Regret"],
+        "ai_summary": "Opens with the iconic alarm clock cacophony. The roto-tom intro is one of rock's most recognizable moments, leading into Gilmour's searing guitar solo — a meditation on life slipping away."
+      }
+    },
+    {
+      "id": "8",
+      "name": "Smells Like Teen Spirit",
+      "artist": "Nirvana",
+      "album": "Nevermind",
+      "year": 1991,
+      "img": "https://upload.wikimedia.org/wikipedia/en/b/b7/NirvanaNevermindalbumcover.jpg",
+      "visual_dna": {
+        "primary_color": "#3498db",
+        "palette": ["#3498db", "#2980b9", "#1abc9c", "#ecf0f1", "#2c3e50"],
+        "texture": "Underwater / Distortion"
+      },
+      "sonic_dna": {
+        "bpm": 117,
+        "key": "F Minor",
+        "energy": 0.96,
+        "duration": "5:01",
+        "prominent_instruments": ["Fender Jaguar", "Boss DS-1 Distortion", "Dave Grohl Drums", "Power Chords"]
+      },
+      "genetic_dna": {
+        "producer": "Butch Vig",
+        "songwriter": "Kurt Cobain / Krist Novoselic / Dave Grohl",
+        "mixing_engineer": "Andy Wallace",
+        "studio": "Sound City (Van Nuys)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Angst / Explosive",
+        "themes": ["Apathy", "Rebellion", "Teen Alienation"],
+        "ai_summary": "The four-chord riff that killed hair metal. Butch Vig's layered production gave punk energy a pop sheen, and Cobain's mumbled verses erupting into screamed choruses defined the loud-quiet-loud dynamic."
+      }
+    },
+    {
+      "id": "9",
+      "name": "Everything In Its Right Place",
+      "artist": "Radiohead",
+      "album": "Kid A",
+      "year": 2000,
+      "img": "https://upload.wikimedia.org/wikipedia/en/b/b5/Radiohead.kida.albumart.jpg",
+      "visual_dna": {
+        "primary_color": "#c0392b",
+        "palette": ["#c0392b", "#e74c3c", "#ecf0f1", "#2c3e50", "#ffffff"],
+        "texture": "Pixelated / Glacial"
+      },
+      "sonic_dna": {
+        "bpm": 122,
+        "key": "Db Major",
+        "energy": 0.52,
+        "duration": "4:11",
+        "prominent_instruments": ["Prophet-5 Synth", "Sliced Vocals", "Electric Piano"]
+      },
+      "genetic_dna": {
+        "producer": "Nigel Godrich",
+        "songwriter": "Radiohead",
+        "mixing_engineer": "Nigel Godrich",
+        "studio": "Studios in Copenhagen / Paris / Oxfordshire",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Anxious / Hypnotic",
+        "themes": ["Displacement", "Technology", "Identity Loss"],
+        "ai_summary": "The opening salvo of Radiohead's electronic reinvention. Thom Yorke's voice is chopped and rearranged like a sample, blurring the line between human and machine over pulsing synth chords."
+      }
+    },
+    {
+      "id": "10",
+      "name": "Nikes",
+      "artist": "Frank Ocean",
+      "album": "Blonde",
+      "year": 2016,
+      "img": "https://upload.wikimedia.org/wikipedia/en/a/a0/Blonde_-_Frank_Ocean.jpeg",
+      "visual_dna": {
+        "primary_color": "#27ae60",
+        "palette": ["#27ae60", "#2ecc71", "#ecf0f1", "#bdc3c7", "#2c3e50"],
+        "texture": "Overexposed / Grain"
+      },
+      "sonic_dna": {
+        "bpm": 73,
+        "key": "Gb Major",
+        "energy": 0.42,
+        "duration": "5:14",
+        "prominent_instruments": ["Pitch-Shifted Vocals", "Sparse Synth Pads", "808 Sub Bass"]
+      },
+      "genetic_dna": {
+        "producer": "Frank Ocean / Malay",
+        "songwriter": "Frank Ocean",
+        "mixing_engineer": "Tom Elmhirst",
+        "studio": "Capitol Studios (Hollywood)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Dreamy / Mournful",
+        "themes": ["Materialism", "Queer Identity", "Youth"],
+        "ai_summary": "Opens Blonde with Ocean's voice pitched up to a chipmunk register, creating an alien intimacy. The song gradually descends into his natural baritone, as if shedding a persona in real time."
+      }
+    },
+    {
+      "id": "11",
+      "name": "Feel Good Inc.",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "year": 2005,
+      "img": "https://upload.wikimedia.org/wikipedia/en/d/df/Gorillaz_Demon_Days.PNG",
+      "visual_dna": {
+        "primary_color": "#e74c3c",
+        "palette": ["#e74c3c", "#2c3e50", "#000000", "#95a5a6", "#ffffff"],
+        "texture": "Cartoon / Apocalyptic"
+      },
+      "sonic_dna": {
+        "bpm": 139,
+        "key": "E Minor",
+        "energy": 0.80,
+        "duration": "3:41",
+        "prominent_instruments": ["Melodica", "Bass Guitar", "Laugh Sample", "De La Soul Vocals"]
+      },
+      "genetic_dna": {
+        "producer": "Danger Mouse / Damon Albarn",
+        "songwriter": "Damon Albarn / Jamie Hewlett",
+        "mixing_engineer": "Jason Cox",
+        "studio": "Studio 13 (London)",
+        "featuring": "De La Soul"
+      },
+      "semantic_dna": {
+        "mood": "Dark / Funky",
+        "themes": ["Hedonism", "Corporate Control", "Escapism"],
+        "ai_summary": "The sinister laugh loop and thumping bass riff contrast with the floating melodica sections, creating a song that feels like two worlds colliding — the trapped tower and the windmill of freedom."
+      }
+    },
+    {
+      "id": "12",
+      "name": "Strawberry Fields Forever",
+      "artist": "The Beatles",
+      "album": "Magical Mystery Tour",
+      "year": 1967,
+      "img": "https://upload.wikimedia.org/wikipedia/en/e/e7/Magical_Mystery_Tour.jpg",
+      "visual_dna": {
+        "primary_color": "#e74c3c",
+        "palette": ["#e74c3c", "#f39c12", "#27ae60", "#3498db", "#9b59b6"],
+        "texture": "Kaleidoscope / Psychedelic"
+      },
+      "sonic_dna": {
+        "bpm": 91,
+        "key": "Bb Major",
+        "energy": 0.55,
+        "duration": "4:07",
+        "prominent_instruments": ["Mellotron", "Swarmandal", "Reversed Cymbals", "Cellos"]
+      },
+      "genetic_dna": {
+        "producer": "George Martin",
+        "songwriter": "John Lennon / Paul McCartney",
+        "mixing_engineer": "Geoff Emerick",
+        "studio": "Abbey Road Studios (London)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Dreamlike / Nostalgic",
+        "themes": ["Childhood", "Memory", "Perception"],
+        "ai_summary": "George Martin spliced together two different takes in different keys and tempos by slowing one down and speeding the other up. The result is a woozy, hallucinatory masterpiece that redefined studio recording."
+      }
+    },
+    {
+      "id": "13",
+      "name": "Runaway",
+      "artist": "Kanye West",
+      "album": "My Beautiful Dark Twisted Fantasy",
+      "year": 2010,
+      "img": "https://upload.wikimedia.org/wikipedia/en/2/2c/My_Beautiful_Dark_Twisted_Fantasy.jpg",
+      "visual_dna": {
+        "primary_color": "#e74c3c",
+        "palette": ["#e74c3c", "#c0392b", "#000000", "#ffffff", "#8e44ad"],
+        "texture": "Baroque / Maximalist"
+      },
+      "sonic_dna": {
+        "bpm": 82,
+        "key": "E Major",
+        "energy": 0.70,
+        "duration": "9:08",
+        "prominent_instruments": ["Single Piano Note", "Vocoded Outro", "Strings", "MPC Drums"]
+      },
+      "genetic_dna": {
+        "producer": "Kanye West / Emile Haynie",
+        "songwriter": "Kanye West / Pusha T",
+        "mixing_engineer": "Andrew Dawson",
+        "studio": "Avex Recording Studio (Honolulu)",
+        "featuring": "Pusha T"
+      },
+      "semantic_dna": {
+        "mood": "Grandiose / Vulnerable",
+        "themes": ["Self-Destruction", "Toxic Relationships", "Ego"],
+        "ai_summary": "Opens with a single, repeating piano note — one of hip-hop's most iconic intros. The 9-minute epic builds through orchestral swells before dissolving into a 3-minute vocoder coda, transforming Kanye's voice into pure texture."
+      }
+    },
+    {
+      "id": "14",
+      "name": "Idioteque",
+      "artist": "Radiohead",
+      "album": "Kid A",
+      "year": 2000,
+      "img": "https://upload.wikimedia.org/wikipedia/en/b/b5/Radiohead.kida.albumart.jpg",
+      "visual_dna": {
+        "primary_color": "#c0392b",
+        "palette": ["#c0392b", "#e74c3c", "#ecf0f1", "#2c3e50", "#ffffff"],
+        "texture": "Pixelated / Glacial"
+      },
+      "sonic_dna": {
+        "bpm": 131,
+        "key": "Eb Minor",
+        "energy": 0.78,
+        "duration": "5:09",
+        "prominent_instruments": ["Sampled Synth Stabs", "Electronic Drums", "Distorted Vocal"]
+      },
+      "genetic_dna": {
+        "producer": "Nigel Godrich",
+        "songwriter": "Radiohead",
+        "mixing_engineer": "Nigel Godrich",
+        "studio": "Studios in Copenhagen / Oxford",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Apocalyptic / Danceable",
+        "themes": ["Climate Catastrophe", "Panic", "End Times"],
+        "ai_summary": "Built from a sample of a 1970s electronic composition, the pulsing synth stabs create an urgent, claustrophobic dancefloor. Yorke's frantic vocal — 'ice age coming' — made it prophetic decades later."
+      }
+    },
+    {
+      "id": "15",
+      "name": "Glory Box",
+      "artist": "Portishead",
+      "album": "Dummy",
+      "year": 1994,
+      "img": "https://upload.wikimedia.org/wikipedia/en/thumb/6/6b/Portishead_-_Dummy.png/250px-Portishead_-_Dummy.png",
+      "visual_dna": {
+        "primary_color": "#34495e",
+        "palette": ["#34495e", "#2980b9", "#000000", "#95a5a6", "#7f8c8d"],
+        "texture": "Film Noir / VHS"
+      },
+      "sonic_dna": {
+        "bpm": 72,
+        "key": "Ab Major",
+        "energy": 0.40,
+        "duration": "5:01",
+        "prominent_instruments": ["Isaac Hayes Sample", "Theremin", "Fender Rhodes", "Trip-Hop Breakbeat"]
+      },
+      "genetic_dna": {
+        "producer": "Portishead / Adrian Utley",
+        "songwriter": "Geoff Barrow / Beth Gibbons / Adrian Utley",
+        "mixing_engineer": "Dave McDonald",
+        "studio": "State of Art (Bristol)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Sultry / Melancholy",
+        "themes": ["Desire", "Entrapment", "Vulnerability"],
+        "ai_summary": "Beth Gibbons' aching vocal over the Isaac Hayes guitar sample defines the Trip-Hop aesthetic. The theremin solo in the bridge pushes the song into cinematic noir territory."
+      }
+    },
+    {
+      "id": "16",
+      "name": "Once in a Lifetime",
+      "artist": "Talking Heads",
+      "album": "Remain in Light",
+      "year": 1980,
+      "img": "https://m.media-amazon.com/images/I/81m509vvPbL._UF1000,1000_QL80_.jpg",
+      "visual_dna": {
+        "primary_color": "#c0392b",
+        "palette": ["#c0392b", "#3498db", "#f1c40f", "#000000", "#ecf0f1"],
+        "texture": "Digitized / Mask"
+      },
+      "sonic_dna": {
+        "bpm": 122,
+        "key": "D Major",
+        "energy": 0.82,
+        "duration": "4:19",
+        "prominent_instruments": ["Polyrhythmic Drums", "Funk Bass", "Synthesizer", "African Percussion"]
+      },
+      "genetic_dna": {
+        "producer": "Brian Eno",
+        "songwriter": "David Byrne / Brian Eno / Talking Heads",
+        "mixing_engineer": "Dave Jerden",
+        "studio": "Compass Point Studios (Bahamas)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Anxious / Euphoric",
+        "themes": ["Existential Crisis", "Suburban Life", "Automatism"],
+        "ai_summary": "David Byrne's stream-of-consciousness lyrics over Afrobeat-influenced polyrhythms created an existential anthem. The famous music video solidified Byrne as a performance art icon."
+      }
+    },
+    {
+      "id": "17",
+      "name": "NEW MAGIC WAND",
+      "artist": "Tyler, The Creator",
+      "album": "IGOR",
+      "year": 2019,
+      "img": "https://upload.wikimedia.org/wikipedia/en/5/51/Igor_-_Tyler%2C_the_Creator.jpg",
+      "visual_dna": {
+        "primary_color": "#ff69b4",
+        "palette": ["#ff69b4", "#000000", "#ffffff", "#333333", "#ffb7b2"],
+        "texture": "Raw / Pastel"
+      },
+      "sonic_dna": {
+        "bpm": 134,
+        "key": "F Minor",
+        "energy": 0.88,
+        "duration": "3:15",
+        "prominent_instruments": ["Distorted Synth Bass", "Breakbeats", "Screamed Vocals", "Drum Machine"]
+      },
+      "genetic_dna": {
+        "producer": "Tyler, The Creator",
+        "songwriter": "Tyler, The Creator",
+        "mixing_engineer": "Neal Pogue",
+        "studio": "Conway Recording Studios (LA)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Manic / Aggressive",
+        "themes": ["Obsession", "Jealousy", "Destruction"],
+        "ai_summary": "The most abrasive track on IGOR. Tyler screams over blown-out synths and pounding drums, channeling the desperation of wanting someone who doesn't want you back into pure sonic violence."
+      }
+    },
+    {
+      "id": "18",
+      "name": "Space Song",
+      "artist": "Beach House",
+      "album": "Depression Cherry",
+      "year": 2015,
+      "img": "https://upload.wikimedia.org/wikipedia/en/1/12/Depression_Cherry.png",
+      "visual_dna": {
+        "primary_color": "#e74c3c",
+        "palette": ["#e74c3c", "#c0392b", "#000000", "#ecf0f1", "#2c3e50"],
+        "texture": "Blurred / Velvet"
+      },
+      "sonic_dna": {
+        "bpm": 108,
+        "key": "Eb Major",
+        "energy": 0.42,
+        "duration": "5:28",
+        "prominent_instruments": ["Yamaha CS-60 Synth", "Slide Guitar", "Drum Machine", "Reverb Vocals"]
+      },
+      "genetic_dna": {
+        "producer": "Chris Coady",
+        "songwriter": "Victoria Legrand / Alex Scally",
+        "mixing_engineer": "Chris Coady",
+        "studio": "Studio in Austin, TX",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Ethereal / Bittersweet",
+        "themes": ["Drifting Apart", "Nostalgia", "Outer Space"],
+        "ai_summary": "Became a viral sensation years after release. The shimmering synths and Legrand's distant vocal create the sensation of floating — the production is intentionally hazy, like a memory dissolving."
+      }
+    },
+    {
+      "id": "19",
+      "name": "Last Nite",
+      "artist": "The Strokes",
+      "album": "Is This It",
+      "year": 2001,
+      "img": "https://upload.wikimedia.org/wikipedia/en/3/3d/Strokes-is-this-it-US.jpg",
+      "visual_dna": {
+        "primary_color": "#2980b9",
+        "palette": ["#2980b9", "#ecf0f1", "#000000", "#e74c3c", "#f39c12"],
+        "texture": "Lo-Fi / Gritty"
+      },
+      "sonic_dna": {
+        "bpm": 104,
+        "key": "D Major",
+        "energy": 0.89,
+        "duration": "3:14",
+        "prominent_instruments": ["Dual Interlocking Guitars", "Hi-Hat", "Bandpass-Filtered Vocals"]
+      },
+      "genetic_dna": {
+        "producer": "Gordon Raphael",
+        "songwriter": "Julian Casablancas",
+        "mixing_engineer": "Gordon Raphael",
+        "studio": "Transporterraum (NYC)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Cool / Urgent",
+        "themes": ["Last Night Out", "Disconnection", "Youth"],
+        "ai_summary": "The dual-guitar interplay between Valensi and Hammond Jr. over a driving beat kickstarted the garage rock revival. Casablancas' vocal is deliberately run through a filter to sound like a cheap radio."
+      }
+    },
+    {
+      "id": "20",
+      "name": "Sing About Me, I'm Dying of Thirst",
+      "artist": "Kendrick Lamar",
+      "album": "good kid, m.A.A.d city",
+      "year": 2012,
+      "img": "https://upload.wikimedia.org/wikipedia/en/4/45/Good_Kid_M.A.A.D_City.jpg",
+      "visual_dna": {
+        "primary_color": "#95a5a6",
+        "palette": ["#95a5a6", "#2c3e50", "#000000", "#ffffff", "#7f8c8d"],
+        "texture": "Polaroid / Grain"
+      },
+      "sonic_dna": {
+        "bpm": 81,
+        "key": "Ab Major",
+        "energy": 0.55,
+        "duration": "12:03",
+        "prominent_instruments": ["Piano Loop", "Sampled Strings", "808 Kick", "Vocal Harmonies"]
+      },
+      "genetic_dna": {
+        "producer": "Like / DJ Dahi",
+        "songwriter": "Kendrick Lamar",
+        "mixing_engineer": "Derek 'MixedByAli' Ali",
+        "studio": "Top Dawg Studios (Carson, CA)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Elegiac / Raw",
+        "themes": ["Gang Violence", "Legacy", "Redemption"],
+        "ai_summary": "A 12-minute two-part epic. The first half features Kendrick rapping from the perspectives of people who've died around him, their voices literally fading out mid-verse. The second half is a prayer for salvation."
+      }
+    },
+    {
+      "id": "21",
+      "name": "Venus in Furs",
+      "artist": "The Velvet Underground",
+      "album": "The Velvet Underground & Nico",
+      "year": 1967,
+      "img": "https://m.media-amazon.com/images/I/71H2+Sj3wmL._UF1000,1000_QL80_.jpg",
+      "visual_dna": {
+        "primary_color": "#f1c40f",
+        "palette": ["#f1c40f", "#000000", "#ffffff", "#e6e6e6", "#333333"],
+        "texture": "Pop Art / Banana"
+      },
+      "sonic_dna": {
+        "bpm": 110,
+        "key": "D Minor",
+        "energy": 0.62,
+        "duration": "5:12",
+        "prominent_instruments": ["Viola Drone", "Ostrich Guitar", "Tambourine", "Distorted Feedback"]
+      },
+      "genetic_dna": {
+        "producer": "Andy Warhol / Tom Wilson",
+        "songwriter": "Lou Reed",
+        "mixing_engineer": "Tom Wilson",
+        "studio": "Scepter Studios (NYC)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Dark / Hypnotic",
+        "themes": ["Sadomasochism", "Obsession", "Literary Decadence"],
+        "ai_summary": "John Cale's droning viola creates a relentless, trance-like pulse. Named after the Leopold von Sacher-Masoch novel, it brought avant-garde noise into rock and roll for the first time."
+      }
+    },
+    {
+      "id": "22",
+      "name": "Teardrop",
+      "artist": "Massive Attack",
+      "album": "Mezzanine",
+      "year": 1998,
+      "img": "https://upload.wikimedia.org/wikipedia/en/e/e9/Massive_Attack_-_Mezzanine.png",
+      "visual_dna": {
+        "primary_color": "#2c3e50",
+        "palette": ["#2c3e50", "#000000", "#e67e22", "#95a5a6", "#34495e"],
+        "texture": "Insect / Dark"
+      },
+      "sonic_dna": {
+        "bpm": 76,
+        "key": "A Minor",
+        "energy": 0.45,
+        "duration": "5:30",
+        "prominent_instruments": ["Harpsichord Sample", "Elizabeth Fraser Vocals", "Deep Sub Bass", "Trip-Hop Beat"]
+      },
+      "genetic_dna": {
+        "producer": "Massive Attack / Neil Davidge",
+        "songwriter": "Massive Attack / Elizabeth Fraser",
+        "mixing_engineer": "Neil Davidge",
+        "studio": "Massive Attack Studios (Bristol)",
+        "featuring": "Elizabeth Fraser (Cocteau Twins)"
+      },
+      "semantic_dna": {
+        "mood": "Haunting / Tender",
+        "themes": ["Love", "Fragility", "Birth"],
+        "ai_summary": "Elizabeth Fraser's otherworldly vocal floats over a harpsichord loop and cavernous bass. Best known as the House theme song, it remains one of the most atmospheric pieces of the 1990s."
+      }
+    },
+    {
+      "id": "23",
+      "name": "Windowlicker",
+      "artist": "Aphex Twin",
+      "album": "Windowlicker EP",
+      "year": 1999,
+      "img": "https://upload.wikimedia.org/wikipedia/en/5/50/Aphex_Twin_-_Windowlicker.jpg",
+      "visual_dna": {
+        "primary_color": "#d35400",
+        "palette": ["#d35400", "#f39c12", "#000000", "#e67e22", "#2c3e50"],
+        "texture": "Uncanny Valley / Glitch"
+      },
+      "sonic_dna": {
+        "bpm": 134,
+        "key": "Variable / Chromatic",
+        "energy": 0.75,
+        "duration": "6:07",
+        "prominent_instruments": ["Granular Synthesis", "Processed Vocals", "Complex Drum Programming", "Ambient Pads"]
+      },
+      "genetic_dna": {
+        "producer": "Richard D. James",
+        "songwriter": "Richard D. James",
+        "mixing_engineer": "Richard D. James",
+        "studio": "Bedroom Studio (London)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Beautiful / Unsettling",
+        "themes": ["Beauty Standards", "Technology", "Absurdism"],
+        "ai_summary": "Wraps genuinely beautiful melodic content in abrasive, glitchy production. The Chris Cunningham music video became iconic, and the track's shifting time signatures keep the listener perpetually off-balance."
+      }
+    },
+    {
+      "id": "24",
+      "name": "Wake Up",
+      "artist": "Arcade Fire",
+      "album": "Funeral",
+      "year": 2004,
+      "img": "https://upload.wikimedia.org/wikipedia/en/2/25/ArcadeFireFuneralCover.jpg",
+      "visual_dna": {
+        "primary_color": "#ecf0f1",
+        "palette": ["#ecf0f1", "#bdc3c7", "#e74c3c", "#34495e", "#95a5a6"],
+        "texture": "Paper / Hand-Drawn"
+      },
+      "sonic_dna": {
+        "bpm": 134,
+        "key": "C Major",
+        "energy": 0.92,
+        "duration": "5:39",
+        "prominent_instruments": ["Group Vocals", "Violin", "Accordion", "Crashing Drums"]
+      },
+      "genetic_dna": {
+        "producer": "Arcade Fire",
+        "songwriter": "Arcade Fire",
+        "mixing_engineer": "Mark Lawson",
+        "studio": "Hotel2Tango (Montreal)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Anthemic / Cathartic",
+        "themes": ["Childhood's End", "Collective Joy", "Defiance"],
+        "ai_summary": "A communal scream of defiance. The massed group vocals build from a whisper to a stadium-shaking crescendo, and David Bowie loved it so much he performed it live with the band."
+      }
+    },
+    {
+      "id": "25",
+      "name": "Starman",
+      "artist": "David Bowie",
+      "album": "The Rise and Fall of Ziggy Stardust",
+      "year": 1972,
+      "img": "https://upload.wikimedia.org/wikipedia/en/0/01/ZiggyStardust.jpg",
+      "visual_dna": {
+        "primary_color": "#e67e22",
+        "palette": ["#e67e22", "#2c3e50", "#2980b9", "#f1c40f", "#000000"],
+        "texture": "Urban / Rain"
+      },
+      "sonic_dna": {
+        "bpm": 80,
+        "key": "Bb Major",
+        "energy": 0.72,
+        "duration": "4:16",
+        "prominent_instruments": ["12-String Acoustic", "String Arrangement", "Mick Ronson Guitar", "Piano"]
+      },
+      "genetic_dna": {
+        "producer": "David Bowie / Ken Scott",
+        "songwriter": "David Bowie",
+        "mixing_engineer": "Ken Scott",
+        "studio": "Trident Studios (London)",
+        "featuring": null
+      },
+      "semantic_dna": {
+        "mood": "Hopeful / Theatrical",
+        "themes": ["Alien Contact", "Youth Culture", "Salvation"],
+        "ai_summary": "The song that made Bowie a star. The ascending chord progression in the chorus creates a literal sense of lift-off, and his Top of the Pops performance — arm draped around Mick Ronson — became a watershed cultural moment."
+      }
+    }
+  ],
+  "links": [
+    { "source": "1", "target": "9", "reason": "Shared Hypnotic Synth Textures & Repetitive Builds" },
+    { "source": "1", "target": "4", "reason": "Retro-Future Aesthetic & Vocoder Usage" },
+    { "source": "2", "target": "6", "reason": "Stripped-Back Production & Emotional Vulnerability" },
+    { "source": "2", "target": "14", "reason": "Same Artist, Contrasting Emotional Poles" },
+    { "source": "3", "target": "20", "reason": "Same Artist — Protest Anthem vs. Intimate Elegy" },
+    { "source": "3", "target": "11", "reason": "Genre-Blending Hip-Hop with Live Instrumentation" },
+    { "source": "4", "target": "5", "reason": "Groove-Driven Simplicity & Analog Warmth" },
+    { "source": "5", "target": "15", "reason": "Haunting Female Vocal over Hypnotic Loop" },
+    { "source": "6", "target": "10", "reason": "Same Album — Minimal Production & Vocal Experimentation" },
+    { "source": "7", "target": "12", "reason": "Psychedelic Studio Innovation at Abbey Road" },
+    { "source": "7", "target": "25", "reason": "Early 70s Art Rock & Theatrical Ambition" },
+    { "source": "8", "target": "19", "reason": "Raw Rock Energy & Garage Revival DNA" },
+    { "source": "8", "target": "17", "reason": "Explosive Angst Channeled Through Distortion" },
+    { "source": "9", "target": "14", "reason": "Same Album — Electronic Reinvention of Rock" },
+    { "source": "9", "target": "23", "reason": "Shared IDM Influence & Vocal Processing" },
+    { "source": "10", "target": "18", "reason": "Dream Pop Textures & Ethereal Atmosphere" },
+    { "source": "11", "target": "16", "reason": "Eclectic Genre Fusion & Art-Pop Sensibility" },
+    { "source": "12", "target": "21", "reason": "1967 NYC Avant-Garde & Studio Experimentation" },
+    { "source": "13", "target": "20", "reason": "Epic-Length Hip-Hop & Raw Vulnerability" },
+    { "source": "13", "target": "17", "reason": "Maximalist Production & Emotional Extremes" },
+    { "source": "14", "target": "23", "reason": "Electronic Sampling & Apocalyptic Dancefloor Energy" },
+    { "source": "15", "target": "22", "reason": "Bristol Trip-Hop Scene & Cinematic Production" },
+    { "source": "16", "target": "21", "reason": "NYC Art Rock Lineage & Avant-Garde Roots" },
+    { "source": "17", "target": "13", "reason": "Hip-Hop Auteurs Pushing Production Boundaries" },
+    { "source": "18", "target": "22", "reason": "Atmospheric Reverb & Ethereal Female Vocal" },
+    { "source": "19", "target": "25", "reason": "Guitar-Driven Hooks & Rock Star Mythos" },
+    { "source": "20", "target": "7", "reason": "Epic Song Structures & Concept Album Storytelling" },
+    { "source": "24", "target": "25", "reason": "Anthemic Choruses & Glam-Influenced Theatricality" },
+    { "source": "24", "target": "8", "reason": "Communal Energy & Generational Anthems" },
+    { "source": "1", "target": "18", "reason": "Dream Pop Textures & Shimmering Synths" }
+  ]
+}
