@@ -96,5 +96,38 @@ cur.execute("SELECT name, artist, bpm, key, mood FROM songs LIMIT 3")
 for row in cur.fetchall():
     print(f"  {row[1]} — {row[0]} | BPM: {row[2]} | Key: {row[3]} | Mood: {row[4]}")
 
+# Seed links
+cur.execute("DELETE FROM links")
+
+for i, link in enumerate(data.get("links", [])):
+    cur.execute("""
+        INSERT INTO links (id, source_id, target_id, reason, type)
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (id) DO NOTHING
+    """, (
+        str(i + 1),
+        str(link["source"]),
+        str(link["target"]),
+        link.get("reason"),
+        link.get("type", "ai_generated"),
+    ))
+
+conn.commit()
+
+cur.execute("SELECT COUNT(*) FROM links")
+link_count = cur.fetchone()[0]
+print(f"✓ Inserted {link_count} links")
+
+# Show a few connections
+cur.execute("""
+    SELECT s1.name, s1.artist, s2.name, s2.artist, l.reason
+    FROM links l
+    JOIN songs s1 ON l.source_id = s1.id
+    JOIN songs s2 ON l.target_id = s2.id
+    LIMIT 3
+""")
+for row in cur.fetchall():
+    print(f"  {row[0]} ({row[1]}) → {row[2]} ({row[3]})")
+    print(f"    Reason: {row[4]}")
 cur.close()
 conn.close()
