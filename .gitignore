@@ -38,3 +38,4 @@ pipeline/output/
 # Large cached files
 *.json.bak
 graph_cache/
+service-account.json
