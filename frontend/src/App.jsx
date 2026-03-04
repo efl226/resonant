@@ -1,24 +1,38 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react'; // added useEffect
 import ForceGraph2D from 'react-force-graph-2d';
 import SearchBar from './components/SearchBar';
 import Sidebar from './components/Sidebar';
 import NeuralFilters from './components/NeuralFilters'; 
 import TimelineView from './components/TimelineView';
-import INITIAL_DATA from './data/songsseed.json';
+import { loadGraphData } from './api/client';       // NEW — replaces JSON import
+import FALLBACK_DATA from './data/songsseed.json';   // keep as fallback
 import './index.css';
 
 export default function App() {
   const graphRef = useRef();
   
+  const [graphData, setGraphData] = useState(FALLBACK_DATA);  // NEW — starts with seed, replaced by API
+  const [loading, setLoading] = useState(true);                // NEW
   const [viewMode, setViewMode] = useState('graph');
   const [selectedNode, setSelectedNode] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
 
+  // NEW — load from API on startup
+  useEffect(() => {
+    loadGraphData()
+      .then(data => {
+        setGraphData(data);
+        setLoading(false);
+        console.log('[Resonant] Graph data ready');
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
   const filteredNodeIds = useMemo(() => {
     if (!activeFilter) return null;
     const { type, value } = activeFilter;
-    return INITIAL_DATA.nodes
+    return graphData.nodes                    // was INITIAL_DATA.nodes
       .filter(n => {
         if (type === 'year') return Math.floor(n.year / 10) * 10 + 's' === value;
         if (type === 'producer') return n.genetic_dna?.producer === value;
@@ -28,7 +42,7 @@ export default function App() {
         return false;
       })
       .map(n => n.id);
-  }, [activeFilter]);
+  }, [activeFilter, graphData]);              // added graphData dependency
 
   const { highlightNodes, highlightLinks } = useMemo(() => {
     const nodes = new Set();
@@ -38,7 +52,7 @@ export default function App() {
       filteredNodeIds.forEach(id => nodes.add(id));
     } else if (selectedNode) {
       nodes.add(selectedNode.id);
-      INITIAL_DATA.links.forEach(link => {
+      graphData.links.forEach(link => {       // was INITIAL_DATA.links
         const s = link.source.id || link.source;
         const t = link.target.id || link.target;
         if (s === selectedNode.id || t === selectedNode.id) {
@@ -48,7 +62,7 @@ export default function App() {
       });
     }
     return { highlightNodes: nodes, highlightLinks: links };
-  }, [selectedNode, filteredNodeIds]);
+  }, [selectedNode, filteredNodeIds, graphData]);  // added graphData dependency
 
   const handleNodeClick = useCallback((node) => {
     if (viewMode === 'graph' && graphRef.current) {
@@ -68,26 +82,26 @@ export default function App() {
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: '#050505', overflow: 'hidden', position: 'relative', fontFamily: 'sans-serif' }}>
 
-      <SearchBar data={INITIAL_DATA} onSelect={handleNodeClick} />
+      <SearchBar data={graphData} onSelect={handleNodeClick} />
       
       <NeuralFilters 
-        data={INITIAL_DATA} 
+        data={graphData}                      
         activeFilter={activeFilter} 
         onFilterChange={setActiveFilter} 
       />
 
       <Sidebar 
         node={selectedNode} 
-        links={INITIAL_DATA.links} 
+        links={graphData.links}               
         onClose={handleBackgroundClick} 
       />
 
       {viewMode === 'timeline' ? (
-        <TimelineView data={INITIAL_DATA} onSelect={handleNodeClick} />
+        <TimelineView data={graphData} onSelect={handleNodeClick} />
       ) : (
         <ForceGraph2D
           ref={graphRef}
-          graphData={INITIAL_DATA}
+          graphData={graphData}                
           backgroundColor="#050505"
           nodeRelSize={12}
           
@@ -142,7 +156,6 @@ export default function App() {
               ctx.font = `600 ${fontSize}px Inter, sans-serif`;
               ctx.textAlign = 'center';
               
-              // Song title
               const textWidth = ctx.measureText(label).width;
               const artistWidth = ctx.measureText(artistLabel).width;
               const bgWidth = Math.max(textWidth, artistWidth) + 8;
@@ -153,7 +166,6 @@ export default function App() {
               ctx.fillStyle = 'rgba(255,255,255,0.9)';
               ctx.fillText(label, node.x, node.y + size/2 + fontSize + 4);
               
-              // Artist name below
               ctx.font = `400 ${smallFontSize}px Inter, sans-serif`;
               ctx.fillStyle = 'rgba(255,255,255,0.5)';
               ctx.fillText(artistLabel, node.x, node.y + size/2 + fontSize + smallFontSize + 6);
