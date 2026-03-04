@@ -1,30 +1,43 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react'; // added useEffect
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import SearchBar from './components/SearchBar';
 import Sidebar from './components/Sidebar';
 import NeuralFilters from './components/NeuralFilters'; 
 import TimelineView from './components/TimelineView';
-import { loadGraphData } from './api/client';       // NEW — replaces JSON import
-import FALLBACK_DATA from './data/songsseed.json';   // keep as fallback
+import { loadGraphData } from './api/client';
+import FALLBACK_DATA from './data/songsseed.json';
 import './index.css';
 
 export default function App() {
   const graphRef = useRef();
   
-  const [graphData, setGraphData] = useState(FALLBACK_DATA);  // NEW — starts with seed, replaced by API
-  const [loading, setLoading] = useState(true);                // NEW
+  const [graphData, setGraphData] = useState(FALLBACK_DATA);
+  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('graph');
   const [selectedNode, setSelectedNode] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
 
-  // NEW — load from API on startup
   useEffect(() => {
     loadGraphData()
       .then(data => {
-        setGraphData(data);
+        // Pin nodes that have UMAP coordinates to their positions
+        const processedNodes = data.nodes.map(node => {
+          if (node.umap_x !== null && node.umap_y !== null) {
+            return {
+              ...node,
+              fx: node.umap_x,
+              fy: node.umap_y,
+            };
+          }
+          return node;
+        });
+        setGraphData({ nodes: processedNodes, links: data.links });
         setLoading(false);
         console.log('[Resonant] Graph data ready');
+        
+        const umapCount = processedNodes.filter(n => n.fx !== undefined).length;
+        console.log(`[Resonant] ${umapCount} nodes pinned to UMAP positions, ${processedNodes.length - umapCount} floating`);
       })
       .catch(() => setLoading(false));
   }, []);
@@ -32,7 +45,7 @@ export default function App() {
   const filteredNodeIds = useMemo(() => {
     if (!activeFilter) return null;
     const { type, value } = activeFilter;
-    return graphData.nodes                    // was INITIAL_DATA.nodes
+    return graphData.nodes
       .filter(n => {
         if (type === 'year') return Math.floor(n.year / 10) * 10 + 's' === value;
         if (type === 'producer') return n.genetic_dna?.producer === value;
@@ -42,7 +55,7 @@ export default function App() {
         return false;
       })
       .map(n => n.id);
-  }, [activeFilter, graphData]);              // added graphData dependency
+  }, [activeFilter, graphData]);
 
   const { highlightNodes, highlightLinks } = useMemo(() => {
     const nodes = new Set();
@@ -52,7 +65,7 @@ export default function App() {
       filteredNodeIds.forEach(id => nodes.add(id));
     } else if (selectedNode) {
       nodes.add(selectedNode.id);
-      graphData.links.forEach(link => {       // was INITIAL_DATA.links
+      graphData.links.forEach(link => {
         const s = link.source.id || link.source;
         const t = link.target.id || link.target;
         if (s === selectedNode.id || t === selectedNode.id) {
@@ -62,7 +75,7 @@ export default function App() {
       });
     }
     return { highlightNodes: nodes, highlightLinks: links };
-  }, [selectedNode, filteredNodeIds, graphData]);  // added graphData dependency
+  }, [selectedNode, filteredNodeIds, graphData]);
 
   const handleNodeClick = useCallback((node) => {
     if (viewMode === 'graph' && graphRef.current) {
@@ -105,6 +118,10 @@ export default function App() {
           backgroundColor="#050505"
           nodeRelSize={12}
           
+          d3AlphaDecay={0.05}
+          d3VelocityDecay={0.3}
+          warmupTicks={100}
+          
           linkColor={link => highlightLinks.has(link) ? '#fff' : 'rgba(255,255,255,0.05)'}
           linkWidth={link => highlightLinks.has(link) ? 2 : 1}
           linkDirectionalParticles={link => highlightLinks.has(link) ? 4 : 0}
@@ -118,6 +135,7 @@ export default function App() {
             const isModeActive = filteredNodeIds || selectedNode;
             const isHighlighted = isModeActive ? (highlightNodes.has(node.id)) : true;
             const isSelected = selectedNode?.id === node.id;
+            const hasUmap = node.umap_x !== null && node.umap_y !== null;
             
             const alpha = isHighlighted ? 1 : 0.05; 
             const size = isSelected ? 30 : 20;
@@ -135,10 +153,20 @@ export default function App() {
             try {
               ctx.drawImage(img, node.x - size/2, node.y - size/2, size, size);
             } catch(e) {
-              ctx.fillStyle = "#333";
+              // Fallback: colored circle based on whether it has UMAP data
+              ctx.fillStyle = hasUmap ? "#1a6b3a" : "#333";
               ctx.fill();
             }
             ctx.restore();
+
+            // Ring around UMAP-positioned nodes so you can tell them apart
+            if (!isSelected && hasUmap && !activeFilter) {
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, size/2 + 2, 0, 2 * Math.PI);
+              ctx.strokeStyle = 'rgba(0, 255, 100, 0.3)';
+              ctx.lineWidth = 1 / globalScale;
+              ctx.stroke();
+            }
 
             if (isSelected || (activeFilter && isHighlighted)) {
               ctx.beginPath();
