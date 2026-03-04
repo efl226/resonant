@@ -7,7 +7,6 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Load your existing seed data
 with open("frontend/src/data/songsseed.json", "r") as f:
     data = json.load(f)
 
@@ -16,7 +15,7 @@ print(f"Found {len(data['nodes'])} songs and {len(data['links'])} links")
 conn = psycopg.connect(DATABASE_URL)
 cur = conn.cursor()
 
-# Clear existing data so we can re-run cleanly
+cur.execute("DELETE FROM links")
 cur.execute("DELETE FROM songs")
 
 for song in data["nodes"]:
@@ -38,6 +37,13 @@ for song in data["nodes"]:
         songwriter = [songwriter] if songwriter else []
     elif songwriter is None:
         songwriter = []
+
+    # Handle mood — convert from string to array if needed
+    mood = semantic.get("mood")
+    if isinstance(mood, str):
+        mood = [m.strip() for m in mood.split("/")]
+    elif mood is None:
+        mood = []
 
     cur.execute("""
         INSERT INTO songs (
@@ -77,7 +83,7 @@ for song in data["nodes"]:
         visual.get("primary_color"),
         visual.get("palette", []),
         visual.get("texture"),
-        semantic.get("mood"),
+        mood,
         semantic.get("themes", []),
         semantic.get("ai_summary"),
         "seed_json",
@@ -86,19 +92,7 @@ for song in data["nodes"]:
 conn.commit()
 print(f"✓ Inserted {len(data['nodes'])} songs")
 
-# Verify
-cur.execute("SELECT COUNT(*) FROM songs")
-count = cur.fetchone()[0]
-print(f"✓ Total songs in database: {count}")
-
-# Quick sample
-cur.execute("SELECT name, artist, bpm, key, mood FROM songs LIMIT 3")
-for row in cur.fetchall():
-    print(f"  {row[1]} — {row[0]} | BPM: {row[2]} | Key: {row[3]} | Mood: {row[4]}")
-
 # Seed links
-cur.execute("DELETE FROM links")
-
 for i, link in enumerate(data.get("links", [])):
     cur.execute("""
         INSERT INTO links (id, source_id, target_id, reason, type)
@@ -114,20 +108,20 @@ for i, link in enumerate(data.get("links", [])):
 
 conn.commit()
 
+# Verify
+cur.execute("SELECT COUNT(*) FROM songs")
+song_count = cur.fetchone()[0]
 cur.execute("SELECT COUNT(*) FROM links")
 link_count = cur.fetchone()[0]
-print(f"✓ Inserted {link_count} links")
 
-# Show a few connections
-cur.execute("""
-    SELECT s1.name, s1.artist, s2.name, s2.artist, l.reason
-    FROM links l
-    JOIN songs s1 ON l.source_id = s1.id
-    JOIN songs s2 ON l.target_id = s2.id
-    LIMIT 3
-""")
+print(f"✓ {song_count} songs, {link_count} links in database")
+
+# Show a sample with the new mood array format
+cur.execute("SELECT name, artist, mood, themes FROM songs LIMIT 3")
 for row in cur.fetchall():
-    print(f"  {row[0]} ({row[1]}) → {row[2]} ({row[3]})")
-    print(f"    Reason: {row[4]}")
+    print(f"  {row[1]} — {row[0]}")
+    print(f"    Mood: {row[2]}")
+    print(f"    Themes: {row[3]}")
+
 cur.close()
 conn.close()
