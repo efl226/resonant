@@ -21,13 +21,14 @@ export default function App() {
   useEffect(() => {
     loadGraphData()
       .then(data => {
-        // Pin nodes that have UMAP coordinates to their positions
         const processedNodes = data.nodes.map(node => {
           if (node.umap_x !== null && node.umap_y !== null) {
             return {
               ...node,
-              fx: node.umap_x,
-              fy: node.umap_y,
+              x: node.umap_x,
+              y: node.umap_y,
+              _targetX: node.umap_x,
+              _targetY: node.umap_y,
             };
           }
           return node;
@@ -35,12 +36,42 @@ export default function App() {
         setGraphData({ nodes: processedNodes, links: data.links });
         setLoading(false);
         console.log('[Resonant] Graph data ready');
-        
-        const umapCount = processedNodes.filter(n => n.fx !== undefined).length;
-        console.log(`[Resonant] ${umapCount} nodes pinned to UMAP positions, ${processedNodes.length - umapCount} floating`);
       })
       .catch(() => setLoading(false));
   }, []);
+
+  // Apply UMAP gravity force once graph is loaded
+  useEffect(() => {
+    if (!graphRef.current || loading) return;
+
+    const fg = graphRef.current;
+
+    // Custom force that pulls nodes toward their UMAP coordinates
+    const umapForce = (alpha) => {
+      graphData.nodes.forEach(node => {
+        if (node._targetX !== undefined && node._targetY !== undefined) {
+          const strength = 0.000005; // How strongly nodes are pulled to UMAP position
+          node.vx += (node._targetX - node.x) * strength * alpha;
+          node.vy += (node._targetY - node.y) * strength * alpha;
+        }
+      });
+    };
+
+    fg.d3Force('umap', umapForce);
+
+    // Weaken the default forces so UMAP gravity dominates
+    const charge = fg.d3Force('charge');
+    if (charge) charge.strength(-30);
+
+    const link = fg.d3Force('link');
+    if (link) link.strength(0.02);
+
+    // Remove the centering force so UMAP positions aren't pulled to origin
+    fg.d3Force('center', null);
+
+    // Reheat the simulation
+    fg.d3ReheatSimulation();
+  }, [loading, graphData]);
 
   const filteredNodeIds = useMemo(() => {
     if (!activeFilter) return null;
@@ -118,12 +149,13 @@ export default function App() {
           backgroundColor="#050505"
           nodeRelSize={12}
           
-          d3AlphaDecay={0.05}
+          d3AlphaDecay={0.01}
+          d3AlphaMin={0.001}
           d3VelocityDecay={0.3}
-          warmupTicks={100}
+          enableNodeDrag={true}
           
-          linkColor={link => highlightLinks.has(link) ? '#fff' : 'rgba(255,255,255,0.05)'}
-          linkWidth={link => highlightLinks.has(link) ? 2 : 1}
+          linkColor={link => highlightLinks.has(link) ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0)'}
+          linkWidth={link => highlightLinks.has(link) ? 2 : 0}
           linkDirectionalParticles={link => highlightLinks.has(link) ? 4 : 0}
           linkDirectionalParticleSpeed={0.005}
 
@@ -131,11 +163,19 @@ export default function App() {
           onNodeHover={setHoveredNode}
           onBackgroundClick={handleBackgroundClick}
 
+          onNodeDragEnd={node => {
+            // After dragging, let the UMAP gravity pull it back
+            node.fx = undefined;
+            node.fy = undefined;
+            if (graphRef.current) {
+              graphRef.current.d3ReheatSimulation();
+            }
+          }}
+
           nodeCanvasObject={(node, ctx, globalScale) => {
             const isModeActive = filteredNodeIds || selectedNode;
             const isHighlighted = isModeActive ? (highlightNodes.has(node.id)) : true;
             const isSelected = selectedNode?.id === node.id;
-            const hasUmap = node.umap_x !== null && node.umap_y !== null;
             
             const alpha = isHighlighted ? 1 : 0.05; 
             const size = isSelected ? 30 : 20;
@@ -153,20 +193,18 @@ export default function App() {
             try {
               ctx.drawImage(img, node.x - size/2, node.y - size/2, size, size);
             } catch(e) {
-              // Fallback: colored circle based on whether it has UMAP data
-              ctx.fillStyle = hasUmap ? "#1a6b3a" : "#333";
+              ctx.fillStyle = "#333";
               ctx.fill();
             }
             ctx.restore();
-
-            // Ring around UMAP-positioned nodes so you can tell them apart
-            if (!isSelected && hasUmap && !activeFilter) {
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, size/2 + 2, 0, 2 * Math.PI);
-              ctx.strokeStyle = 'rgba(0, 255, 100, 0.3)';
-              ctx.lineWidth = 1 / globalScale;
-              ctx.stroke();
-            }
+            // Subtle ring around all nodes
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, size/2 + 1, 0, 2 * Math.PI);
+            ctx.strokeStyle = node.visual_dna?.primary_color 
+              ? `${node.visual_dna.primary_color}88` 
+              : 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1.5 / globalScale;
+            ctx.stroke();
 
             if (isSelected || (activeFilter && isHighlighted)) {
               ctx.beginPath();
