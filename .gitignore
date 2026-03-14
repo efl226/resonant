@@ -39,3 +39,4 @@ pipeline/output/
 *.json.bak
 graph_cache/
 service-account.json
+.cache
