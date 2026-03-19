@@ -77,54 +77,7 @@ const Sidebar = ({ node, links, onClose }) => {
             </div>
           </section>
           
-          {/* NEURAL CONNECTIONS */}
-          <section>
-            <h3 
-              className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3"
-              style={{ color: `rgba(${accentRgb}, 0.4)` }}
-            >
-              Neural Connections
-            </h3>
-            <div className="flex flex-col gap-3">
-              {nodeLinks.map((link, i) => {
-                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-                const isSource = sourceId === node.id;
-                const otherNode = isSource ? link.target : link.source;
-                const otherName = typeof otherNode === 'object' ? otherNode.name : `Song ${otherNode}`;
-                const otherArtist = typeof otherNode === 'object' ? otherNode.artist : '';
-
-                return (
-                  <div 
-                    key={i} 
-                    className="p-4 rounded-lg transition-all duration-200 cursor-default"
-                    style={{
-                      backgroundColor: `rgba(${accentRgb}, 0.05)`,
-                      border: `1px solid rgba(${accentRgb}, 0.1)`,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = `rgba(${accentRgb}, 0.12)`;
-                      e.currentTarget.style.borderColor = `rgba(${accentRgb}, 0.25)`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = `rgba(${accentRgb}, 0.05)`;
-                      e.currentTarget.style.borderColor = `rgba(${accentRgb}, 0.1)`;
-                    }}
-                  >
-                    <div className="mb-2">
-                      <span className="text-sm font-bold text-white/90">{otherName}</span>
-                      {otherArtist && <span className="text-xs text-white/40 ml-2">{otherArtist}</span>}
-                    </div>
-                    <p className="text-xs text-white/50 italic leading-relaxed">
-                      "{link.reason}"
-                    </p>
-                  </div>
-                );
-              })}
-              {nodeLinks.length === 0 && (
-                <div className="text-white/30 text-xs italic">No active connections in this network subset.</div>
-              )}
-            </div>
-          </section>
+          
           
           {/* SONIC DNA */}
           <section 
@@ -263,6 +216,55 @@ const Sidebar = ({ node, links, onClose }) => {
             >
               "{node.semantic_dna?.ai_summary}"
             </p>
+          </section>
+
+          {/* NEURAL CONNECTIONS */}
+          <section>
+            <h3 
+              className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3"
+              style={{ color: `rgba(${accentRgb}, 0.4)` }}
+            >
+              Neural Connections
+            </h3>
+            <div className="flex flex-col gap-3">
+              {nodeLinks.map((link, i) => {
+                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                const isSource = sourceId === node.id;
+                const otherNode = isSource ? link.target : link.source;
+                const otherName = typeof otherNode === 'object' ? otherNode.name : `Song ${otherNode}`;
+                const otherArtist = typeof otherNode === 'object' ? otherNode.artist : '';
+
+                return (
+                  <div 
+                    key={i} 
+                    className="p-4 rounded-lg transition-all duration-200 cursor-default"
+                    style={{
+                      backgroundColor: `rgba(${accentRgb}, 0.05)`,
+                      border: `1px solid rgba(${accentRgb}, 0.1)`,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = `rgba(${accentRgb}, 0.12)`;
+                      e.currentTarget.style.borderColor = `rgba(${accentRgb}, 0.25)`;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = `rgba(${accentRgb}, 0.05)`;
+                      e.currentTarget.style.borderColor = `rgba(${accentRgb}, 0.1)`;
+                    }}
+                  >
+                    <div className="mb-2">
+                      <span className="text-sm font-bold text-white/90">{otherName}</span>
+                      {otherArtist && <span className="text-xs text-white/40 ml-2">{otherArtist}</span>}
+                    </div>
+                    <p className="text-xs text-white/50 italic leading-relaxed">
+                      "{link.reason}"
+                    </p>
+                  </div>
+                );
+              })}
+              {nodeLinks.length === 0 && (
+                <div className="text-white/30 text-xs italic">No active connections in this network subset.</div>
+              )}
+            </div>
           </section>
 
         </div>

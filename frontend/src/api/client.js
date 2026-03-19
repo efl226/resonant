@@ -1,5 +1,15 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+export async function loadClusterData() {
+  try {
+    const response = await fetch(`${API_BASE}/api/clusters`);
+    if (!response.ok) throw new Error('No cluster data');
+    return await response.json();
+  } catch {
+    return { clusters: [] };
+  }
+}
+
 export async function loadGraphData() {
   try {
     console.log('[Resonant] Loading graph from API...');
@@ -19,3 +29,4 @@ export async function loadGraphData() {
     return seedData.default || seedData;
   }
 }
+

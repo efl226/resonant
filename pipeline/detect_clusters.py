@@ -1,6 +1,6 @@
 """
-Detect clusters from UMAP positions and label them
-based on the most common attributes within each cluster.
+Detect clusters from UMAP positions, label them with
+human-friendly genre names, and output organic shape data.
 """
 import json
 import numpy as np
@@ -34,19 +34,170 @@ songs = [dict(zip(columns, row)) for row in rows]
 
 print(f"Clustering {len(songs)} songs...\n")
 
-# Extract UMAP coordinates
 coords = np.array([[s['umap_x'], s['umap_y']] for s in songs])
 
-# Run DBSCAN — eps controls how close songs need to be to form a cluster
-# min_samples controls minimum cluster size
-dbscan = DBSCAN(eps=120, min_samples=3)
+dbscan = DBSCAN(eps=65, min_samples=3)
 labels = dbscan.fit_predict(coords)
 
 n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
 n_noise = list(labels).count(-1)
 print(f"Found {n_clusters} clusters ({n_noise} unclustered songs)\n")
 
-# Analyze each cluster
+# ─── Genre labeling logic ───
+def guess_cluster_label(cluster_songs):
+    """Generate a human-friendly label based on the songs in the cluster."""
+    artists = [s['artist'] for s in cluster_songs if s['artist']]
+    all_moods = []
+    all_modes = []
+    all_vocal = []
+    all_rhythm = []
+    decades = []
+    energies = []
+    instruments = []
+
+    for s in cluster_songs:
+        if s['mood']:
+            all_moods.extend(s['mood'])
+        if s['mode']:
+            all_modes.append(s['mode'])
+        if s['vocal_type']:
+            all_vocal.append(s['vocal_type'])
+        if s['rhythm_feel']:
+            all_rhythm.append(s['rhythm_feel'])
+        if s['year']:
+            decades.append((s['year'] // 10) * 10)
+        if s['energy'] is not None:
+            energies.append(s['energy'])
+        if s['instruments']:
+            instruments.extend(s['instruments'])
+
+    top_mode = Counter(all_modes).most_common(1)[0][0] if all_modes else None
+    top_vocal = Counter(all_vocal).most_common(1)[0][0] if all_vocal else None
+    top_rhythm = Counter(all_rhythm).most_common(1)[0][0] if all_rhythm else None
+    top_decade = Counter(decades).most_common(1)[0][0] if decades else None
+    avg_energy = np.mean(energies) if energies else 0.5
+    top_instruments = [i for i, _ in Counter(instruments).most_common(5)]
+
+    # Known artist → genre mappings for well-known artists
+    artist_genres = {
+        'Radiohead': 'Art Rock', 'Pink Floyd': 'Prog Rock',
+        'Led Zeppelin': 'Classic Rock', 'The Beatles': 'Classic Rock',
+        'Queen': 'Classic Rock', 'David Bowie': 'Art Rock',
+        'Fleetwood Mac': 'Classic Rock', 'The Rolling Stones': 'Classic Rock',
+        'Nirvana': 'Grunge', 'The Smiths': 'Post-Punk',
+        'Joy Division': 'Post-Punk', 'The Cure': 'Post-Punk',
+        'Depeche Mode': 'Synth-Pop', 'New Order': 'Synth-Pop',
+        'Kendrick Lamar': 'Hip-Hop', 'Kanye West': 'Hip-Hop',
+        'JAŸ-Z': 'Hip-Hop', 'Nas': 'Hip-Hop',
+        'OutKast': 'Hip-Hop', 'Outkast': 'Hip-Hop',
+        'A Tribe Called Quest': 'Hip-Hop',
+        'Tyler, The Creator': 'Hip-Hop', 'MF DOOM': 'Hip-Hop',
+        'Frank Ocean': 'Alt R&B', 'SZA': 'Alt R&B',
+        'Daniel Caesar': 'Alt R&B', 'Solange': 'Alt R&B',
+        'Erykah Badu': 'Neo-Soul', 'D\'Angelo': 'Neo-Soul',
+        'Ms. Lauryn Hill': 'Neo-Soul', 'J Dilla': 'Neo-Soul',
+        'Stevie Wonder': 'Soul', 'Marvin Gaye': 'Soul',
+        'Al Green': 'Soul', 'Otis Redding': 'Soul',
+        'Nina Simone': 'Jazz / Soul', 'Miles Davis': 'Jazz',
+        'John Coltrane': 'Jazz', 'Herbie Hancock': 'Jazz',
+        'Daft Punk': 'Electronic', 'Aphex Twin': 'Electronic',
+        'Boards of Canada': 'Ambient', 'Brian Eno': 'Ambient',
+        'Burial': 'Electronic', 'James Blake': 'Electronic',
+        'Massive Attack': 'Trip-Hop', 'Portishead': 'Trip-Hop',
+        'Beach House': 'Dream Pop', 'Cocteau Twins': 'Dream Pop',
+        'Mazzy Star': 'Dream Pop', 'Slowdive': 'Shoegaze',
+        'my bloody valentine': 'Shoegaze',
+        'Sigur Rós': 'Post-Rock', 'Björk': 'Art Pop',
+        'Bon Iver': 'Indie Folk', 'Sufjan Stevens': 'Indie Folk',
+        'Elliott Smith': 'Indie Folk', 'Nick Drake': 'Folk',
+        'Phoebe Bridgers': 'Indie Rock', 'Mitski': 'Indie Rock',
+        'Arctic Monkeys': 'Indie Rock', 'The Strokes': 'Indie Rock',
+        'Arcade Fire': 'Indie Rock', 'Vampire Weekend': 'Indie Rock',
+        'Interpol': 'Post-Punk Revival',
+        'Tame Impala': 'Psychedelic Pop',
+        'Mac DeMarco': 'Indie Pop',
+        'LCD Soundsystem': 'Dance-Punk',
+        'Billie Eilish': 'Dark Pop', 'Lana Del Rey': 'Dream Pop',
+        'Amy Winehouse': 'Neo-Soul', 'Beyoncé': 'Pop / R&B',
+        'Childish Gambino': 'Funk / R&B', 'Anderson .Paak': 'Funk / R&B',
+        'Thundercat': 'Funk / R&B',
+        'Bob Marley & The Wailers': 'Reggae', 'Fela Kuti': 'Afrobeat',
+        'Kraftwerk': 'Electronic', 'FKA twigs': 'Art Pop',
+        'Sampha': 'Alt R&B', 'Flying Lotus': 'Experimental Hip-Hop',
+        'Blood Orange': 'Alt R&B', 'Moses Sumney': 'Art Pop',
+        'Weyes Blood': 'Art Pop', 'King Krule': 'Post-Punk',
+        'Khruangbin': 'Psychedelic Soul',
+        'Japanese Breakfast': 'Indie Pop',
+        'Jeff Buckley': 'Art Rock',
+        'Talking Heads': 'New Wave', 'Pixies': 'Alt Rock',
+        'Sonic Youth': 'Noise Rock', 'MGMT': 'Psychedelic Pop',
+        'The Who': 'Classic Rock', 'Jimi Hendrix': 'Classic Rock',
+        'Gorillaz': 'Alt Rock',
+    }
+
+    # Count genre votes from known artists
+    genre_votes = Counter()
+    for s in cluster_songs:
+        artist_name = s['artist'].split(',')[0].strip() if s['artist'] else ''
+        if artist_name in artist_genres:
+            genre_votes[artist_genres[artist_name]] += 1
+
+    if genre_votes:
+        top_genre = genre_votes.most_common(1)[0][0]
+        # If there's a strong consensus, use it
+        if genre_votes.most_common(1)[0][1] >= len(cluster_songs) * 0.4:
+            return top_genre
+        # If there are two strong genres, combine them
+        if len(genre_votes) >= 2:
+            top_two = genre_votes.most_common(2)
+            if top_two[1][1] >= len(cluster_songs) * 0.2:
+                return f"{top_two[0][0]} / {top_two[1][0]}"
+            return top_genre
+
+    # Fallback: derive from attributes
+    if top_vocal == 'rapped':
+        return 'Hip-Hop'
+    if top_vocal == 'instrumental':
+        if top_rhythm == 'swung':
+            return 'Jazz'
+        return 'Instrumental'
+    if top_rhythm == 'swung' and top_mode == 'modal':
+        return 'Jazz / Soul'
+    if avg_energy > 0.8 and top_mode == 'minor':
+        return 'High Energy'
+    if avg_energy < 0.35:
+        return 'Ambient / Ethereal'
+    if top_decade and top_decade <= 1970:
+        return 'Classic'
+    
+    # Last resort
+    top_mood = Counter(all_moods).most_common(1)[0][0] if all_moods else 'Mixed'
+    return f"{top_mood} {top_mode.title() if top_mode else ''}".strip()
+
+
+# ─── Distinct color palette ───
+# These are visually distinct from each other on a dark background
+cluster_palette = [
+    '#4A9EE8',  # bright blue
+    '#E8724A',  # warm orange
+    '#6BCB77',  # soft green
+    '#B84AE8',  # purple
+    '#E8C94A',  # gold
+    '#4AE8D4',  # teal
+    '#E84A6A',  # rose
+    '#8B9FE8',  # periwinkle
+    '#E8A04A',  # amber
+    '#4AE88B',  # mint
+    '#D44AE8',  # magenta
+    '#E8E04A',  # yellow
+    '#4A7BE8',  # royal blue
+    '#E86B4A',  # coral
+    '#7BE84A',  # lime
+    '#E84AB8',  # pink
+    '#4AE8E8',  # cyan
+    '#C4E84A',  # chartreuse
+]
+
 clusters = {}
 for cluster_id in sorted(set(labels)):
     if cluster_id == -1:
@@ -55,92 +206,44 @@ for cluster_id in sorted(set(labels)):
     cluster_songs = [songs[i] for i in range(len(songs)) if labels[i] == cluster_id]
     cluster_coords = coords[labels == cluster_id]
 
-    # Center point of the cluster
     center_x = float(cluster_coords[:, 0].mean())
     center_y = float(cluster_coords[:, 1].mean())
-    radius = float(np.max(np.sqrt(
+    
+    # Calculate radius from actual song positions
+    distances = np.sqrt(
         (cluster_coords[:, 0] - center_x)**2 +
         (cluster_coords[:, 1] - center_y)**2
-    ))) + 40  # padding
+    )
+    radius = float(np.max(distances)) + 50
 
-    # Find dominant attributes
-    all_moods = []
-    all_modes = []
-    all_vocal_types = []
-    all_rhythm = []
-    all_decades = []
-    all_artists = []
-    energies = []
-    bpms = []
+    # Generate organic shape data — multiple offset blobs
+    np.random.seed(cluster_id * 42)
+    blobs = []
+    # Main blob
+    blobs.append({
+        'x': center_x,
+        'y': center_y,
+        'radius': radius,
+        'opacity': 0.10,
+    })
+    # 3-5 secondary blobs offset from center for organic feel
+    n_secondary = np.random.randint(3, 6)
+    for _ in range(n_secondary):
+        angle = np.random.uniform(0, 2 * np.pi)
+        dist = np.random.uniform(radius * 0.2, radius * 0.6)
+        blob_radius = np.random.uniform(radius * 0.4, radius * 0.8)
+        blobs.append({
+            'x': center_x + np.cos(angle) * dist,
+            'y': center_y + np.sin(angle) * dist,
+            'radius': blob_radius,
+            'opacity': np.random.uniform(0.04, 0.09),
+        })
 
-    for s in cluster_songs:
-        if s['mood']:
-            all_moods.extend(s['mood'])
-        if s['mode']:
-            all_modes.append(s['mode'])
-        if s['vocal_type']:
-            all_vocal_types.append(s['vocal_type'])
-        if s['rhythm_feel']:
-            all_rhythm.append(s['rhythm_feel'])
-        if s['year']:
-            all_decades.append(f"{(s['year'] // 10) * 10}s")
-        if s['artist']:
-            all_artists.append(s['artist'])
-        if s['energy'] is not None:
-            energies.append(s['energy'])
-        if s['bpm'] is not None:
-            bpms.append(s['bpm'])
+    label = guess_cluster_label(cluster_songs)
+    color = cluster_palette[int(cluster_id) % len(cluster_palette)]
 
-    top_moods = [m for m, _ in Counter(all_moods).most_common(3)]
-    top_mode = Counter(all_modes).most_common(1)[0][0] if all_modes else None
-    top_vocal = Counter(all_vocal_types).most_common(1)[0][0] if all_vocal_types else None
-    top_decade = Counter(all_decades).most_common(1)[0][0] if all_decades else None
-    top_rhythm = Counter(all_rhythm).most_common(1)[0][0] if all_rhythm else None
-    avg_energy = np.mean(energies) if energies else 0.5
-    avg_bpm = np.mean(bpms) if bpms else 120
-
-    # Generate a descriptive label
-    label_parts = []
-    if top_moods:
-        label_parts.append(top_moods[0])
-    if top_mode:
-        label_parts.append(top_mode.title())
-    if top_vocal and top_vocal != 'sung':
-        label_parts.append(top_vocal.title())
-    if top_decade:
-        label_parts.append(top_decade)
-
-    label = " / ".join(label_parts[:3]) if label_parts else f"Cluster {cluster_id}"
-
-    # Pick a color based on dominant mood
-    mood_colors = {
-        'Melancholic': '#4A6FA5',
-        'Melancholy': '#4A6FA5',
-        'Energetic': '#E85D3A',
-        'Dark': '#6B3FA0',
-        'Introspective': '#2E86AB',
-        'Confident': '#E8A838',
-        'Dreamy': '#9B72CF',
-        'Aggressive': '#D63230',
-        'Smooth': '#3AA68E',
-        'Cool': '#5C88C4',
-        'Nostalgic': '#C4956A',
-        'Atmospheric': '#5E7B99',
-        'Reflective': '#7BA7BC',
-        'Groovy': '#D4A843',
-        'Psychedelic': '#B54FC4',
-        'Cathartic': '#CF6B5F',
-        'Ethereal': '#8FB8DE',
-        'Defiant': '#CC4A4A',
-        'Sultry': '#8E4585',
-        'Haunting': '#4A5568',
-        'Wistful': '#8BA5B5',
-    }
-    cluster_color = '#666666'
-    for mood in top_moods:
-        if mood in mood_colors:
-            cluster_color = mood_colors[mood]
-            break
+    energies = [s['energy'] for s in cluster_songs if s['energy'] is not None]
+    bpms = [s['bpm'] for s in cluster_songs if s['bpm'] is not None]
 
     clusters[int(cluster_id)] = {
         'id': int(cluster_id),
@@ -148,31 +251,21 @@ for cluster_id in sorted(set(labels)):
         'center_x': center_x,
         'center_y': center_y,
         'radius': radius,
-        'color': cluster_color,
+        'color': color,
+        'blobs': blobs,
         'song_count': len(cluster_songs),
-        'avg_energy': round(avg_energy, 2),
-        'avg_bpm': round(avg_bpm, 0),
-        'top_moods': top_moods,
-        'top_mode': top_mode,
-        'top_vocal': top_vocal,
-        'top_decade': top_decade,
-        'top_rhythm': top_rhythm,
+        'avg_energy': round(np.mean(energies), 2) if energies else 0.5,
+        'avg_bpm': round(np.mean(bpms), 0) if bpms else 120,
         'songs': [{'name': s['name'], 'artist': s['artist']} for s in cluster_songs],
     }
 
-    # Print cluster info
-    print(f"Cluster {cluster_id}: {label}")
+    print(f"Cluster {cluster_id}: {label} ({color})")
     print(f"  Center: ({center_x:.0f}, {center_y:.0f}), Radius: {radius:.0f}")
-    print(f"  Songs: {len(cluster_songs)}")
-    print(f"  Moods: {top_moods}")
-    print(f"  Mode: {top_mode} | Vocal: {top_vocal} | Rhythm: {top_rhythm}")
-    print(f"  Avg Energy: {avg_energy:.2f} | Avg BPM: {avg_bpm:.0f}")
-    print(f"  Color: {cluster_color}")
+    print(f"  Songs: {len(cluster_songs)}, Blobs: {len(blobs)}")
     for s in cluster_songs:
         print(f"    • {s['artist']} — {s['name']}")
     print()
 
-# Save clusters to a JSON file for the API
 output = {
     'clusters': list(clusters.values()),
     'unclustered_count': n_noise,
@@ -185,14 +278,5 @@ with open('pipeline/output/clusters.json', 'w') as f:
 
 print(f"✓ Saved {n_clusters} clusters to pipeline/output/clusters.json")
 
-# Also store cluster_id on each song in the database
-for i, song in enumerate(songs):
-    cluster_id = int(labels[i])
-    cur.execute(
-        "UPDATE songs SET source = source WHERE id = %s",
-        (song['id'],)
-    )
-
-conn.commit()
 cur.close()
 conn.close()

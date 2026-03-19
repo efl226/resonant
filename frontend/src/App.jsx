@@ -4,14 +4,29 @@ import SearchBar from './components/SearchBar';
 import Sidebar from './components/Sidebar';
 import NeuralFilters from './components/NeuralFilters'; 
 import TimelineView from './components/TimelineView';
-import { loadGraphData } from './api/client';
+import { loadGraphData, loadClusterData } from './api/client';
 import FALLBACK_DATA from './data/songsseed.json';
 import './index.css';
+
+// ─── Image cache to prevent flickering ───
+const imageCache = new Map();
+
+function getCachedImage(src) {
+  if (!src) return null;
+  if (imageCache.has(src)) return imageCache.get(src);
+  
+  const img = new Image();
+  img.crossOrigin = "Anonymous";
+  img.src = src;
+  imageCache.set(src, img);
+  return img;
+}
 
 export default function App() {
   const graphRef = useRef();
   
   const [graphData, setGraphData] = useState(FALLBACK_DATA);
+  const [clusters, setClusters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('graph');
   const [selectedNode, setSelectedNode] = useState(null);
@@ -19,8 +34,8 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState(null);
 
   useEffect(() => {
-    loadGraphData()
-      .then(data => {
+    Promise.all([loadGraphData(), loadClusterData()])
+      .then(([data, clusterData]) => {
         const processedNodes = data.nodes.map(node => {
           if (node.umap_x !== null && node.umap_y !== null) {
             return {
@@ -34,23 +49,23 @@ export default function App() {
           return node;
         });
         setGraphData({ nodes: processedNodes, links: data.links });
+        setClusters(clusterData.clusters || []);
         setLoading(false);
-        console.log('[Resonant] Graph data ready');
+        console.log(`[Resonant] Graph data ready. ${clusterData.clusters?.length || 0} clusters loaded`);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  // Apply UMAP gravity force once graph is loaded
+  // Apply UMAP gravity force
   useEffect(() => {
     if (!graphRef.current || loading) return;
 
     const fg = graphRef.current;
 
-    // Custom force that pulls nodes toward their UMAP coordinates
     const umapForce = (alpha) => {
       graphData.nodes.forEach(node => {
         if (node._targetX !== undefined && node._targetY !== undefined) {
-          const strength = 0.000005; // How strongly nodes are pulled to UMAP position
+          const strength = 0.08;
           node.vx += (node._targetX - node.x) * strength * alpha;
           node.vy += (node._targetY - node.y) * strength * alpha;
         }
@@ -59,19 +74,65 @@ export default function App() {
 
     fg.d3Force('umap', umapForce);
 
-    // Weaken the default forces so UMAP gravity dominates
     const charge = fg.d3Force('charge');
     if (charge) charge.strength(-30);
 
     const link = fg.d3Force('link');
     if (link) link.strength(0.02);
 
-    // Remove the centering force so UMAP positions aren't pulled to origin
     fg.d3Force('center', null);
-
-    // Reheat the simulation
     fg.d3ReheatSimulation();
   }, [loading, graphData]);
+
+  // ─── Arrow key navigation ───
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!selectedNode || !graphRef.current) return;
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      
+      e.preventDefault();
+
+      const directions = {
+        'ArrowUp':    { x: 0, y: -1 },
+        'ArrowDown':  { x: 0, y: 1 },
+        'ArrowLeft':  { x: -1, y: 0 },
+        'ArrowRight': { x: 1, y: 0 },
+      };
+
+      const dir = directions[e.key];
+      let bestNode = null;
+      let bestScore = -Infinity;
+
+      graphData.nodes.forEach(node => {
+        if (node.id === selectedNode.id) return;
+
+        const dx = node.x - selectedNode.x;
+        const dy = node.y - selectedNode.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 1) return;
+
+        const alignment = (dx * dir.x + dy * dir.y) / distance;
+
+        if (alignment < 0.3) return;
+
+        const score = alignment - (distance / 1000);
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestNode = node;
+        }
+      });
+
+      if (bestNode) {
+        graphRef.current.centerAt(bestNode.x, bestNode.y, 400);
+        setSelectedNode(bestNode);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNode, graphData]);
 
   const filteredNodeIds = useMemo(() => {
     if (!activeFilter) return null;
@@ -123,16 +184,18 @@ export default function App() {
     }
   }, [viewMode]);
 
+  const hexToRgba = (hex, alpha) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: '#050505', overflow: 'hidden', position: 'relative', fontFamily: 'sans-serif' }}>
 
       <SearchBar data={graphData} onSelect={handleNodeClick} />
       
-      <NeuralFilters 
-        data={graphData}                      
-        activeFilter={activeFilter} 
-        onFilterChange={setActiveFilter} 
-      />
 
       <Sidebar 
         node={selectedNode} 
@@ -148,6 +211,7 @@ export default function App() {
           graphData={graphData}                
           backgroundColor="#050505"
           nodeRelSize={12}
+          nodeLabel={() => ''}
           
           d3AlphaDecay={0.01}
           d3AlphaMin={0.001}
@@ -160,16 +224,53 @@ export default function App() {
           linkDirectionalParticleSpeed={0.005}
 
           onNodeClick={handleNodeClick}
-          onNodeHover={setHoveredNode}
+          onNodeHover={(node) => {
+            setHoveredNode(node);
+          }}
           onBackgroundClick={handleBackgroundClick}
 
           onNodeDragEnd={node => {
-            // After dragging, let the UMAP gravity pull it back
             node.fx = undefined;
             node.fy = undefined;
             if (graphRef.current) {
               graphRef.current.d3ReheatSimulation();
             }
+          }}
+
+          onRenderFramePre={(ctx, globalScale) => {
+            const time = Date.now() / 3000;
+
+            clusters.forEach((cluster, ci) => {
+              const { blobs, color, label, center_x, center_y, radius } = cluster;
+              
+              (blobs || []).forEach((blob, bi) => {
+                const drift = bi === 0 ? 0 : 8;
+                const bx = blob.x + Math.sin(time + ci * 2 + bi) * drift;
+                const by = blob.y + Math.cos(time * 0.7 + ci * 3 + bi * 1.5) * drift;
+                const br = blob.radius + Math.sin(time * 0.5 + bi * 2) * (blob.radius * 0.05);
+
+                const gradient = ctx.createRadialGradient(
+                  bx, by, 0,
+                  bx, by, br
+                );
+                gradient.addColorStop(0, hexToRgba(color, blob.opacity));
+                gradient.addColorStop(0.5, hexToRgba(color, blob.opacity * 0.5));
+                gradient.addColorStop(1, hexToRgba(color, 0));
+
+                ctx.beginPath();
+                ctx.arc(bx, by, br, 0, 2 * Math.PI);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+              });
+
+              if (globalScale < 1.5) {
+                const fontSize = Math.max(14, 20 / globalScale);
+                ctx.font = `600 ${fontSize}px Inter, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillStyle = hexToRgba(color, 0.5);
+                ctx.fillText(label, center_x, center_y - radius * 0.65);
+              }
+            });
           }}
 
           nodeCanvasObject={(node, ctx, globalScale) => {
@@ -182,21 +283,21 @@ export default function App() {
 
             ctx.globalAlpha = alpha;
 
-            const img = new Image();
-            img.src = node.img;
-            img.crossOrigin = "Anonymous";
+            const img = getCachedImage(node.img);
             
             ctx.save();
             ctx.beginPath();
             ctx.arc(node.x, node.y, size/2, 0, 2 * Math.PI);
             ctx.clip();
-            try {
+            
+            if (img && img.complete && img.naturalWidth > 0) {
               ctx.drawImage(img, node.x - size/2, node.y - size/2, size, size);
-            } catch(e) {
-              ctx.fillStyle = "#333";
+            } else {
+              ctx.fillStyle = node.visual_dna?.primary_color || "#333";
               ctx.fill();
             }
             ctx.restore();
+
             // Subtle ring around all nodes
             ctx.beginPath();
             ctx.arc(node.x, node.y, size/2 + 1, 0, 2 * Math.PI);
@@ -214,7 +315,10 @@ export default function App() {
               ctx.stroke();
             }
 
-            if (isHighlighted && globalScale > 1.2) {
+            const isHovered = hoveredNode?.id === node.id;
+            const showLabel = isSelected || isHovered;
+
+            if (showLabel && isHighlighted) {
               const label = node.name;
               const artistLabel = node.artist;
               const fontSize = 14 / globalScale;
@@ -226,10 +330,10 @@ export default function App() {
               const artistWidth = ctx.measureText(artistLabel).width;
               const bgWidth = Math.max(textWidth, artistWidth) + 8;
               
-              ctx.fillStyle = 'rgba(0,0,0,0.7)';
+              ctx.fillStyle = 'rgba(0,0,0,0.8)';
               ctx.fillRect(node.x - bgWidth/2, node.y + size/2 + 2, bgWidth, fontSize + smallFontSize + 8);
               
-              ctx.fillStyle = 'rgba(255,255,255,0.9)';
+              ctx.fillStyle = 'rgba(255,255,255,0.95)';
               ctx.fillText(label, node.x, node.y + size/2 + fontSize + 4);
               
               ctx.font = `400 ${smallFontSize}px Inter, sans-serif`;

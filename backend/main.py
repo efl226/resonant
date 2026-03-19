@@ -107,3 +107,14 @@ def get_graph():
     conn.close()
 
     return {"nodes": nodes, "links": links}
+
+@app.get("/api/clusters")
+def get_clusters():
+    """Return cluster regions for the graph visualization."""
+    import json
+    try:
+        with open("pipeline/output/clusters.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"clusters": [], "unclustered_count": 0, "total_songs": 0}
+    
