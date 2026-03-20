@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-// Helper: convert hex to RGB string for use in rgba()
 const hexToRgb = (hex) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result 
@@ -8,23 +7,51 @@ const hexToRgb = (hex) => {
     : '255, 255, 255';
 };
 
+// Link type styling
+const linkTypeConfig = {
+  samples: { label: 'SAMPLES', color: '#E8724A', icon: '⟲' },
+  shared_musician: { label: 'SHARED MUSICIAN', color: '#6BCB77', icon: '♫' },
+  same_producer: { label: 'SAME PRODUCER', color: '#B84AE8', icon: '◉' },
+  same_artist: { label: 'SAME ARTIST', color: '#4A9EE8', icon: '●' },
+  same_key_bpm: { label: 'HARMONIC MATCH', color: '#E8C94A', icon: '♪' },
+  shared_instruments: { label: 'SHARED INSTRUMENTS', color: '#4AE8D4', icon: '◈' },
+  same_mood: { label: 'MOOD', color: '#E84A6A', icon: '◐' },
+  same_feel: { label: 'FEEL', color: '#8B9FE8', icon: '∿' },
+};
+
 const Sidebar = ({ node, links, onClose }) => {
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [activeConnectionType, setActiveConnectionType] = useState('all');
+
   if (!node) return null;
 
-  // Extract color system from the song's visual DNA
   const accent = node.visual_dna?.primary_color || '#ffffff';
   const accentRgb = hexToRgb(accent);
   const palette = node.visual_dna?.palette || [];
 
+  // Get and categorize links
   const nodeLinks = (links || []).filter(link => {
     const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
     const targetId = typeof link.target === 'object' ? link.target.id : link.target;
     return sourceId === node.id || targetId === node.id;
   });
 
+  const filteredLinks = activeConnectionType === 'all' 
+    ? nodeLinks 
+    : nodeLinks.filter(l => l.type === activeConnectionType);
+
+  // Get unique link types for this node
+  const linkTypes = [...new Set(nodeLinks.map(l => l.type))];
+
+  // Parse data
+  const musicianCredits = node.genetic_dna?.musician_credits || {};
+  const samplesFrom = node.genetic_dna?.samples_from || [];
+  const songwriter = node.genetic_dna?.songwriter || [];
+  const mood = node.semantic_dna?.mood || [];
+
   return (
     <div 
-      className="fixed top-0 right-0 w-[400px] h-full bg-neutral-950/95 text-white z-50 overflow-y-auto backdrop-blur-2xl transition-transform duration-300"
+      className="fixed top-0 right-0 w-[420px] h-full bg-neutral-950/95 text-white z-50 overflow-y-auto backdrop-blur-2xl"
       style={{
         borderLeft: `1px solid rgba(${accentRgb}, 0.2)`,
         boxShadow: `-20px 0 60px rgba(${accentRgb}, 0.08), -5px 0 30px rgba(0,0,0,0.8)`,
@@ -39,7 +66,7 @@ const Sidebar = ({ node, links, onClose }) => {
         ×
       </button>
 
-      {/* HERO — full-bleed image with colored gradient fade */}
+      {/* HERO */}
       <div className="relative">
         <img src={node.img} alt="cover" className="w-full" />
         <div 
@@ -57,142 +84,73 @@ const Sidebar = ({ node, links, onClose }) => {
       <div className="px-8 pb-8 -mt-12 relative z-10">
 
         {/* HEADER */}
-        <h1 className="text-4xl font-bold tracking-tight mb-1">{node.name}</h1>
-        <h2 className="text-xl mb-1" style={{ color: `rgba(${accentRgb}, 0.7)` }}>{node.artist}</h2>
-        <h3 className="text-sm text-white/25 mb-8">
+        <h1 className="text-3xl font-bold tracking-tight mb-1">{node.name}</h1>
+        <h2 className="text-lg mb-1" style={{ color: `rgba(${accentRgb}, 0.7)` }}>{node.artist}</h2>
+        <div className="text-sm text-white/25 mb-2">
           {node.album && <span className="italic">{node.album}</span>}
           {node.album && node.year && <span> • </span>}
           {node.year}
-        </h3>
+          {node.genetic_dna?.label && <span> • {node.genetic_dna.label}</span>}
+        </div>
 
-        <div className="space-y-8">
+        {/* Quick stats row */}
+        <div className="flex gap-3 mb-6 flex-wrap">
+          {node.sonic_dna?.bpm && (
+            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">
+              {node.sonic_dna.bpm} BPM
+            </span>
+          )}
+          {node.sonic_dna?.key && (
+            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">
+              {node.sonic_dna.key}
+            </span>
+          )}
+          {node.sonic_dna?.time_signature && (
+            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">
+              {node.sonic_dna.time_signature}
+            </span>
+          )}
+          {node.sonic_dna?.duration && (
+            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">
+              {node.sonic_dna.duration}
+            </span>
+          )}
+          {node.sonic_dna?.vocal_type && (
+            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">
+              {node.sonic_dna.vocal_type}
+            </span>
+          )}
+        </div>
 
-          {/* VISUAL DNA — palette bar */}
-          <section>
-            <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/20 font-bold mb-3">Visual Palette</h3>
-            <div className="flex h-3 rounded-full overflow-hidden w-full">
+        <div className="space-y-6">
+
+          {/* PALETTE */}
+          {palette.length > 0 && (
+            <div className="flex h-2 rounded-full overflow-hidden w-full">
               {palette.map((color, i) => (
-                <div key={i} style={{ backgroundColor: color }} className="flex-1" title={color} />
+                <div key={i} style={{ backgroundColor: color }} className="flex-1" />
               ))}
             </div>
-          </section>
-          
-          
-          
-          {/* SONIC DNA */}
-          <section 
-            className="p-5 rounded-xl"
-            style={{
-              backgroundColor: `rgba(${accentRgb}, 0.04)`,
-              border: `1px solid rgba(${accentRgb}, 0.1)`,
-            }}
-          >
-            <h3 
-              className="text-[10px] uppercase tracking-[0.2em] font-bold mb-4"
-              style={{ color: `rgba(${accentRgb}, 0.5)` }}
-            >
-              Sonic Architecture
-            </h3>
+          )}
+
+          {/* FUN FACT */}
+          {node.semantic_dna?.fun_fact && (
             <div 
-              className="grid grid-cols-4 gap-3 mb-4 pb-4"
-              style={{ borderBottom: `1px solid rgba(${accentRgb}, 0.08)` }}
+              className="p-4 rounded-lg text-sm leading-relaxed"
+              style={{
+                backgroundColor: `rgba(${accentRgb}, 0.06)`,
+                borderLeft: `3px solid rgba(${accentRgb}, 0.4)`,
+              }}
             >
-              {[
-                { label: 'BPM', value: node.sonic_dna?.bpm },
-                { label: 'KEY', value: node.sonic_dna?.key },
-                { label: 'ENERGY', value: node.sonic_dna?.energy },
-                { label: 'LENGTH', value: node.sonic_dna?.duration },
-              ].map(({ label, value }) => (
-                <div key={label} className="text-center">
-                  <span className="block text-[10px] text-white/30 mb-1">{label}</span>
-                  <span 
-                    className="text-lg font-mono"
-                    style={{ color: `rgba(${accentRgb}, 0.8)` }}
-                  >
-                    {value}
-                  </span>
-                </div>
-              ))}
+              <span className="text-[10px] uppercase tracking-wider text-white/30 block mb-2">Did you know?</span>
+              <span className="text-white/70">{node.semantic_dna.fun_fact}</span>
             </div>
+          )}
 
-            {/* Energy bar */}
-            <div className="mb-4">
-              <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
-                <div 
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{ 
-                    width: `${(node.sonic_dna?.energy || 0) * 100}%`,
-                    background: `linear-gradient(90deg, rgba(${accentRgb}, 0.3), ${accent})`,
-                  }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <strong className="text-white block mb-2 text-xs uppercase tracking-wider">Key Instruments</strong>
-              <div className="flex flex-wrap gap-1.5">
-                {node.sonic_dna?.prominent_instruments.map((inst, i) => (
-                  <span 
-                    key={i} 
-                    className="px-2 py-0.5 rounded text-[11px]"
-                    style={{
-                      backgroundColor: `rgba(${accentRgb}, 0.1)`,
-                      color: `rgba(${accentRgb}, 0.7)`,
-                      border: `1px solid rgba(${accentRgb}, 0.15)`,
-                    }}
-                  >
-                    {inst}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* GENETIC DNA */}
+          {/* MOOD & THEMES */}
           <section>
-            <h3 
-              className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3"
-              style={{ color: `rgba(${accentRgb}, 0.3)` }}
-            >
-              The Village
-            </h3>
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <div className="text-white/40 mb-1">PRODUCER</div>
-                <div className="text-white/90">{node.genetic_dna?.producer}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-white/40 mb-1">SONGWRITER</div>
-                <div className="text-white/90">{node.genetic_dna?.songwriter}</div>
-              </div>
-              <div>
-                <div className="text-white/40 mb-1">MIX ENGINEER</div>
-                <div className="text-white/90">{node.genetic_dna?.mixing_engineer}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-white/40 mb-1">FEATURING</div>
-                <div className="text-white/90">{node.genetic_dna?.featuring || '—'}</div>
-              </div>
-              <div 
-                className="col-span-2 pt-2"
-                style={{ borderTop: `1px solid rgba(${accentRgb}, 0.08)` }}
-              >
-                <div className="text-white/40 mb-1">STUDIO</div>
-                <div className="text-white/90 font-mono text-[10px]">{node.genetic_dna?.studio}</div>
-              </div>
-            </div>
-          </section>
-
-          {/* SEMANTIC DNA */}
-          <section>
-            <h3 
-              className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3"
-              style={{ color: `rgba(${accentRgb}, 0.3)` }}
-            >
-              Semantic Themes
-            </h3>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {node.semantic_dna?.themes.map((tag, i) => (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {mood.map((m, i) => (
                 <span 
                   key={i} 
                   className="px-3 py-1 rounded-full text-xs font-medium"
@@ -202,67 +160,303 @@ const Sidebar = ({ node, links, onClose }) => {
                     border: `1px solid rgba(${accentRgb}, 0.2)`,
                   }}
                 >
+                  {m}
+                </span>
+              ))}
+              {(node.semantic_dna?.themes || []).map((tag, i) => (
+                <span 
+                  key={`t-${i}`} 
+                  className="px-3 py-1 rounded-full text-xs"
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                    color: 'rgba(255,255,255,0.5)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}
+                >
                   #{tag}
                 </span>
               ))}
             </div>
-            <div className="mb-3">
-              <span className="text-xs text-white/30 uppercase tracking-wider">Mood: </span>
-              <span className="text-xs" style={{ color: `rgba(${accentRgb}, 0.6)` }}>{node.semantic_dna?.mood}</span>
-            </div>
-            <p 
-              className="text-sm text-white/50 leading-relaxed italic pl-4"
-              style={{ borderLeft: `2px solid rgba(${accentRgb}, 0.3)` }}
-            >
-              "{node.semantic_dna?.ai_summary}"
-            </p>
           </section>
 
-          {/* NEURAL CONNECTIONS */}
+          {/* AI SUMMARY */}
+          {node.semantic_dna?.ai_summary && (
+            <p className="text-sm text-white/45 leading-relaxed italic">
+              "{node.semantic_dna.ai_summary}"
+            </p>
+          )}
+
+          {/* SAMPLING */}
+          {samplesFrom.length > 0 && (
+            <section>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3" style={{ color: '#E8724A' }}>
+                Samples
+              </h3>
+              <div className="space-y-2">
+                {samplesFrom.map((sample, i) => (
+                  <div 
+                    key={i} 
+                    className="p-3 rounded-lg text-xs"
+                    style={{ backgroundColor: 'rgba(232, 114, 74, 0.08)', border: '1px solid rgba(232, 114, 74, 0.15)' }}
+                  >
+                    <span className="text-white/80 font-medium">{sample.sampled_song}</span>
+                    <span className="text-white/40"> by {sample.sampled_artist}</span>
+                    {sample.element && (
+                      <span className="text-white/30 block mt-1">{sample.element}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* INSTRUMENTS */}
+          {node.sonic_dna?.prominent_instruments?.length > 0 && (
+            <section>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
+                Instruments
+              </h3>
+              <div className="flex flex-wrap gap-1.5">
+                {node.sonic_dna.prominent_instruments.map((inst, i) => (
+                  <span 
+                    key={i} 
+                    className="px-2 py-0.5 rounded text-[11px]"
+                    style={{
+                      backgroundColor: `rgba(${accentRgb}, 0.08)`,
+                      color: `rgba(${accentRgb}, 0.65)`,
+                      border: `1px solid rgba(${accentRgb}, 0.12)`,
+                    }}
+                  >
+                    {inst}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* MUSICIAN CREDITS */}
+          {Object.keys(musicianCredits).length > 0 && (
+            <section>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
+                Musicians
+              </h3>
+              <div className="grid grid-cols-1 gap-1.5">
+                {Object.entries(musicianCredits).map(([name, role], i) => (
+                  <div key={i} className="flex justify-between text-xs py-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <span className="text-white/70">{name}</span>
+                    <span className="text-white/30 italic">{role}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* THE VILLAGE (Production Credits) */}
+          <section>
+            <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
+              Production
+            </h3>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              {node.genetic_dna?.producer && (
+                <div>
+                  <div className="text-white/30 mb-0.5">PRODUCER</div>
+                  <div className="text-white/80">{node.genetic_dna.producer}</div>
+                </div>
+              )}
+              {node.genetic_dna?.mixing_engineer && (
+                <div>
+                  <div className="text-white/30 mb-0.5">MIX ENGINEER</div>
+                  <div className="text-white/80">{node.genetic_dna.mixing_engineer}</div>
+                </div>
+              )}
+              {songwriter.length > 0 && (
+                <div className="col-span-2">
+                  <div className="text-white/30 mb-0.5">SONGWRITERS</div>
+                  <div className="text-white/80">{songwriter.join(', ')}</div>
+                </div>
+              )}
+              {node.genetic_dna?.studio && (
+                <div className="col-span-2">
+                  <div className="text-white/30 mb-0.5">STUDIO</div>
+                  <div className="text-white/80 font-mono text-[10px]">{node.genetic_dna.studio}</div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* SONIC CHARACTER */}
+          {(node.sonic_dna?.energy !== null || node.sonic_dna?.rhythm_feel) && (
+            <section>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
+                Sonic Character
+              </h3>
+              <div className="space-y-2">
+                {node.sonic_dna?.energy !== null && (
+                  <div>
+                    <div className="flex justify-between text-[11px] mb-1">
+                      <span className="text-white/30">Energy</span>
+                      <span className="text-white/50">{node.sonic_dna.energy_shape || ''}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                      <div 
+                        className="h-full rounded-full transition-all"
+                        style={{ 
+                          width: `${(node.sonic_dna.energy || 0) * 100}%`,
+                          backgroundColor: `rgba(${accentRgb}, 0.6)`,
+                        }} 
+                      />
+                    </div>
+                  </div>
+                )}
+                {node.sonic_dna?.bass_weight !== null && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Bass', value: node.sonic_dna?.bass_weight },
+                      { label: 'Mid', value: node.sonic_dna?.mid_weight },
+                      { label: 'Treble', value: node.sonic_dna?.treble_weight },
+                    ].map((band, i) => band.value !== null && band.value !== undefined && (
+                      <div key={i}>
+                        <div className="text-[10px] text-white/25 mb-1">{band.label}</div>
+                        <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+                          <div 
+                            className="h-full rounded-full"
+                            style={{ 
+                              width: `${(band.value || 0) * 100}%`,
+                              backgroundColor: `rgba(${accentRgb}, 0.4)`,
+                            }} 
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {node.sonic_dna?.rhythm_feel && node.sonic_dna.rhythm_feel !== 'straight' && (
+                  <div className="text-xs text-white/40">
+                    Rhythm: <span className="text-white/60">{node.sonic_dna.rhythm_feel}</span>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* LYRICS PREVIEW */}
+          {node.has_lyrics && (
+            <section>
+              <button
+                onClick={() => setShowLyrics(!showLyrics)}
+                className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3 flex items-center gap-2 cursor-pointer hover:opacity-80"
+                style={{ color: `rgba(${accentRgb}, 0.4)` }}
+              >
+                Lyrics {showLyrics ? '▾' : '▸'}
+              </button>
+              {showLyrics && node.lyrics_preview && (
+                <pre className="text-xs text-white/30 leading-relaxed whitespace-pre-wrap font-sans max-h-[200px] overflow-y-auto"
+                  style={{ 
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: `rgba(${accentRgb}, 0.2) transparent`,
+                  }}
+                >
+                  {node.lyrics_preview}
+                </pre>
+              )}
+            </section>
+          )}
+
+          {/* CONNECTIONS */}
           <section>
             <h3 
               className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3"
               style={{ color: `rgba(${accentRgb}, 0.4)` }}
             >
-              Neural Connections
+              Connections ({nodeLinks.length})
             </h3>
-            <div className="flex flex-col gap-3">
-              {nodeLinks.map((link, i) => {
+            
+            {/* Type filter pills */}
+            {linkTypes.length > 1 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                <button
+                  onClick={() => setActiveConnectionType('all')}
+                  className="px-2 py-0.5 rounded text-[10px] transition-all"
+                  style={{
+                    backgroundColor: activeConnectionType === 'all' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)',
+                    color: activeConnectionType === 'all' ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)',
+                  }}
+                >
+                  All
+                </button>
+                {linkTypes.map(type => {
+                  const config = linkTypeConfig[type] || { label: type, color: '#888' };
+                  const isActive = activeConnectionType === type;
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => setActiveConnectionType(isActive ? 'all' : type)}
+                      className="px-2 py-0.5 rounded text-[10px] transition-all"
+                      style={{
+                        backgroundColor: isActive ? `${config.color}22` : 'rgba(255,255,255,0.04)',
+                        color: isActive ? config.color : 'rgba(255,255,255,0.3)',
+                        border: isActive ? `1px solid ${config.color}44` : '1px solid transparent',
+                      }}
+                    >
+                      {config.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              {filteredLinks.map((link, i) => {
                 const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
                 const isSource = sourceId === node.id;
                 const otherNode = isSource ? link.target : link.source;
                 const otherName = typeof otherNode === 'object' ? otherNode.name : `Song ${otherNode}`;
                 const otherArtist = typeof otherNode === 'object' ? otherNode.artist : '';
+                const otherImg = typeof otherNode === 'object' ? otherNode.img : null;
+                
+                const config = linkTypeConfig[link.type] || { label: link.type, color: '#888', icon: '·' };
 
                 return (
                   <div 
                     key={i} 
-                    className="p-4 rounded-lg transition-all duration-200 cursor-default"
+                    className="p-3 rounded-lg transition-all duration-200 cursor-default"
                     style={{
-                      backgroundColor: `rgba(${accentRgb}, 0.05)`,
-                      border: `1px solid rgba(${accentRgb}, 0.1)`,
+                      backgroundColor: `${config.color}08`,
+                      border: `1px solid ${config.color}15`,
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = `rgba(${accentRgb}, 0.12)`;
-                      e.currentTarget.style.borderColor = `rgba(${accentRgb}, 0.25)`;
+                      e.currentTarget.style.backgroundColor = `${config.color}18`;
+                      e.currentTarget.style.borderColor = `${config.color}30`;
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = `rgba(${accentRgb}, 0.05)`;
-                      e.currentTarget.style.borderColor = `rgba(${accentRgb}, 0.1)`;
+                      e.currentTarget.style.backgroundColor = `${config.color}08`;
+                      e.currentTarget.style.borderColor = `${config.color}15`;
                     }}
                   >
-                    <div className="mb-2">
-                      <span className="text-sm font-bold text-white/90">{otherName}</span>
-                      {otherArtist && <span className="text-xs text-white/40 ml-2">{otherArtist}</span>}
+                    <div className="flex items-center gap-3">
+                      {otherImg && (
+                        <img src={otherImg} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-white/85 truncate">{otherName}</div>
+                        {otherArtist && <div className="text-[11px] text-white/35 truncate">{otherArtist}</div>}
+                      </div>
                     </div>
-                    <p className="text-xs text-white/50 italic leading-relaxed">
-                      "{link.reason}"
-                    </p>
+                    {link.reason && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                          style={{ backgroundColor: `${config.color}20`, color: config.color }}
+                        >
+                          {config.icon} {config.label}
+                        </span>
+                        <span className="text-[11px] text-white/35 truncate">{link.reason}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
               {nodeLinks.length === 0 && (
-                <div className="text-white/30 text-xs italic">No active connections in this network subset.</div>
+                <div className="text-white/20 text-xs italic py-4">No connections found.</div>
               )}
             </div>
           </section>
