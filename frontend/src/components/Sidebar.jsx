@@ -7,7 +7,6 @@ const hexToRgb = (hex) => {
     : '255, 255, 255';
 };
 
-// Link type styling
 const linkTypeConfig = {
   samples: { label: 'SAMPLES', color: '#E8724A', icon: '⟲' },
   shared_musician: { label: 'SHARED MUSICIAN', color: '#6BCB77', icon: '♫' },
@@ -17,6 +16,53 @@ const linkTypeConfig = {
   shared_instruments: { label: 'SHARED INSTRUMENTS', color: '#4AE8D4', icon: '◈' },
   same_mood: { label: 'MOOD', color: '#E84A6A', icon: '◐' },
   same_feel: { label: 'FEEL', color: '#8B9FE8', icon: '∿' },
+};
+
+// Dispatch a custom event that SearchBar listens for
+const addFilter = (key, value) => {
+  window.dispatchEvent(new CustomEvent('resonant-add-filter', {
+    detail: { key, value }
+  }));
+};
+
+// Clickable filter tag component
+const FilterTag = ({ label, filterKey, filterValue, color, className = "" }) => {
+  if (!filterValue) return null;
+  return (
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        addFilter(filterKey, filterValue);
+      }}
+      className={`cursor-pointer hover:opacity-80 transition-opacity ${className}`}
+      style={{ color: color || undefined }}
+      title={`Filter by ${label || filterKey}: ${filterValue}`}
+    >
+      {filterValue}
+      <span className="ml-1 opacity-0 group-hover:opacity-50 text-[9px]">+</span>
+    </span>
+  );
+};
+
+// Clickable pill for instruments, moods, etc.
+const FilterPill = ({ value, filterKey, accentRgb }) => {
+  return (
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        addFilter(filterKey, value);
+      }}
+      className="px-2 py-0.5 rounded text-[11px] cursor-pointer transition-all hover:scale-105"
+      style={{
+        backgroundColor: `rgba(${accentRgb}, 0.08)`,
+        color: `rgba(${accentRgb}, 0.65)`,
+        border: `1px solid rgba(${accentRgb}, 0.12)`,
+      }}
+      title={`Filter by ${filterKey}: ${value}`}
+    >
+      {value}
+    </span>
+  );
 };
 
 const Sidebar = ({ node, links, onClose }) => {
@@ -29,7 +75,6 @@ const Sidebar = ({ node, links, onClose }) => {
   const accentRgb = hexToRgb(accent);
   const palette = node.visual_dna?.palette || [];
 
-  // Get and categorize links
   const nodeLinks = (links || []).filter(link => {
     const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
     const targetId = typeof link.target === 'object' ? link.target.id : link.target;
@@ -40,10 +85,8 @@ const Sidebar = ({ node, links, onClose }) => {
     ? nodeLinks 
     : nodeLinks.filter(l => l.type === activeConnectionType);
 
-  // Get unique link types for this node
   const linkTypes = [...new Set(nodeLinks.map(l => l.type))];
 
-  // Parse data
   const musicianCredits = node.genetic_dna?.musician_credits || {};
   const samplesFrom = node.genetic_dna?.samples_from || [];
   const songwriter = node.genetic_dna?.songwriter || [];
@@ -85,12 +128,41 @@ const Sidebar = ({ node, links, onClose }) => {
 
         {/* HEADER */}
         <h1 className="text-3xl font-bold tracking-tight mb-1">{node.name}</h1>
-        <h2 className="text-lg mb-1" style={{ color: `rgba(${accentRgb}, 0.7)` }}>{node.artist}</h2>
+        <h2 
+          className="text-lg mb-1 cursor-pointer hover:opacity-80 transition-opacity"
+          style={{ color: `rgba(${accentRgb}, 0.7)` }}
+          onClick={() => addFilter('artist', node.artist)}
+          title={`Filter by artist: ${node.artist}`}
+        >
+          {node.artist}
+        </h2>
         <div className="text-sm text-white/25 mb-2">
           {node.album && <span className="italic">{node.album}</span>}
           {node.album && node.year && <span> • </span>}
-          {node.year}
-          {node.genetic_dna?.label && <span> • {node.genetic_dna.label}</span>}
+          {node.year && (
+            <span 
+              className="cursor-pointer hover:text-white/50 transition-colors"
+              onClick={() => {
+                const decade = `${Math.floor(node.year / 10) * 10}s`;
+                addFilter('decade', decade);
+              }}
+              title={`Filter by decade`}
+            >
+              {node.year}
+            </span>
+          )}
+          {node.genetic_dna?.label && (
+            <>
+              <span> • </span>
+              <span 
+                className="cursor-pointer hover:text-white/50 transition-colors"
+                onClick={() => addFilter('label', node.genetic_dna.label)}
+                title={`Filter by label: ${node.genetic_dna.label}`}
+              >
+                {node.genetic_dna.label}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Quick stats row */}
@@ -101,7 +173,11 @@ const Sidebar = ({ node, links, onClose }) => {
             </span>
           )}
           {node.sonic_dna?.key && (
-            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">
+            <span 
+              className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors"
+              onClick={() => addFilter('key', node.sonic_dna.key)}
+              title={`Filter by key: ${node.sonic_dna.key}`}
+            >
               {node.sonic_dna.key}
             </span>
           )}
@@ -116,8 +192,21 @@ const Sidebar = ({ node, links, onClose }) => {
             </span>
           )}
           {node.sonic_dna?.vocal_type && (
-            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">
+            <span 
+              className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors"
+              onClick={() => addFilter('vocal_type', node.sonic_dna.vocal_type)}
+              title={`Filter by vocal type`}
+            >
               {node.sonic_dna.vocal_type}
+            </span>
+          )}
+          {node.sonic_dna?.mode && (
+            <span 
+              className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors"
+              onClick={() => addFilter('mode', node.sonic_dna.mode)}
+              title={`Filter by mode`}
+            >
+              {node.sonic_dna.mode}
             </span>
           )}
         </div>
@@ -147,31 +236,35 @@ const Sidebar = ({ node, links, onClose }) => {
             </div>
           )}
 
-          {/* MOOD & THEMES */}
+          {/* MOOD & THEMES — clickable */}
           <section>
             <div className="flex flex-wrap gap-2 mb-3">
               {mood.map((m, i) => (
                 <span 
-                  key={i} 
-                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  key={i}
+                  onClick={() => addFilter('mood', m)}
+                  className="px-3 py-1 rounded-full text-xs font-medium cursor-pointer hover:scale-105 transition-all"
                   style={{
                     backgroundColor: `rgba(${accentRgb}, 0.12)`,
                     color: `rgba(${accentRgb}, 0.8)`,
                     border: `1px solid rgba(${accentRgb}, 0.2)`,
                   }}
+                  title={`Filter by mood: ${m}`}
                 >
                   {m}
                 </span>
               ))}
               {(node.semantic_dna?.themes || []).map((tag, i) => (
                 <span 
-                  key={`t-${i}`} 
-                  className="px-3 py-1 rounded-full text-xs"
+                  key={`t-${i}`}
+                  onClick={() => addFilter('themes', tag)}
+                  className="px-3 py-1 rounded-full text-xs cursor-pointer hover:scale-105 transition-all"
                   style={{
                     backgroundColor: 'rgba(255,255,255,0.04)',
                     color: 'rgba(255,255,255,0.5)',
                     border: '1px solid rgba(255,255,255,0.08)',
                   }}
+                  title={`Filter by theme: ${tag}`}
                 >
                   #{tag}
                 </span>
@@ -200,7 +293,10 @@ const Sidebar = ({ node, links, onClose }) => {
                     style={{ backgroundColor: 'rgba(232, 114, 74, 0.08)', border: '1px solid rgba(232, 114, 74, 0.15)' }}
                   >
                     <span className="text-white/80 font-medium">{sample.sampled_song}</span>
-                    <span className="text-white/40"> by {sample.sampled_artist}</span>
+                    <span 
+                      className="text-white/40 cursor-pointer hover:text-white/60 transition-colors"
+                      onClick={() => addFilter('artist', sample.sampled_artist)}
+                    > by {sample.sampled_artist}</span>
                     {sample.element && (
                       <span className="text-white/30 block mt-1">{sample.element}</span>
                     )}
@@ -210,7 +306,7 @@ const Sidebar = ({ node, links, onClose }) => {
             </section>
           )}
 
-          {/* INSTRUMENTS */}
+          {/* INSTRUMENTS — clickable */}
           {node.sonic_dna?.prominent_instruments?.length > 0 && (
             <section>
               <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
@@ -218,23 +314,13 @@ const Sidebar = ({ node, links, onClose }) => {
               </h3>
               <div className="flex flex-wrap gap-1.5">
                 {node.sonic_dna.prominent_instruments.map((inst, i) => (
-                  <span 
-                    key={i} 
-                    className="px-2 py-0.5 rounded text-[11px]"
-                    style={{
-                      backgroundColor: `rgba(${accentRgb}, 0.08)`,
-                      color: `rgba(${accentRgb}, 0.65)`,
-                      border: `1px solid rgba(${accentRgb}, 0.12)`,
-                    }}
-                  >
-                    {inst}
-                  </span>
+                  <FilterPill key={i} value={inst} filterKey="instruments" accentRgb={accentRgb} />
                 ))}
               </div>
             </section>
           )}
 
-          {/* MUSICIAN CREDITS */}
+          {/* MUSICIAN CREDITS — clickable names */}
           {Object.keys(musicianCredits).length > 0 && (
             <section>
               <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
@@ -244,23 +330,35 @@ const Sidebar = ({ node, links, onClose }) => {
                 {Object.entries(musicianCredits).map(([name, role], i) => (
                   <div key={i} className="flex justify-between text-xs py-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <span className="text-white/70">{name}</span>
-                    <span className="text-white/30 italic">{role}</span>
+                    <span 
+                      className="text-white/30 italic cursor-pointer hover:text-white/50 transition-colors"
+                      onClick={() => addFilter('instruments', role)}
+                      title={`Filter by instrument: ${role}`}
+                    >
+                      {role}
+                    </span>
                   </div>
                 ))}
               </div>
             </section>
           )}
 
-          {/* THE VILLAGE (Production Credits) */}
+          {/* PRODUCTION — clickable */}
           <section>
             <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
               Production
             </h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
               {node.genetic_dna?.producer && (
-                <div>
+                <div className="group">
                   <div className="text-white/30 mb-0.5">PRODUCER</div>
-                  <div className="text-white/80">{node.genetic_dna.producer}</div>
+                  <div 
+                    className="text-white/80 cursor-pointer hover:text-white transition-colors"
+                    onClick={() => addFilter('producer', node.genetic_dna.producer)}
+                    title={`Filter by producer: ${node.genetic_dna.producer}`}
+                  >
+                    {node.genetic_dna.producer}
+                  </div>
                 </div>
               )}
               {node.genetic_dna?.mixing_engineer && (
@@ -272,7 +370,20 @@ const Sidebar = ({ node, links, onClose }) => {
               {songwriter.length > 0 && (
                 <div className="col-span-2">
                   <div className="text-white/30 mb-0.5">SONGWRITERS</div>
-                  <div className="text-white/80">{songwriter.join(', ')}</div>
+                  <div className="text-white/80">
+                    {songwriter.map((sw, i) => (
+                      <span key={i}>
+                        {i > 0 && ', '}
+                        <span 
+                          className="cursor-pointer hover:text-white transition-colors"
+                          onClick={() => addFilter('artist', sw)}
+                          title={`Search for: ${sw}`}
+                        >
+                          {sw}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
               {node.genetic_dna?.studio && (
@@ -331,7 +442,10 @@ const Sidebar = ({ node, links, onClose }) => {
                   </div>
                 )}
                 {node.sonic_dna?.rhythm_feel && node.sonic_dna.rhythm_feel !== 'straight' && (
-                  <div className="text-xs text-white/40">
+                  <div 
+                    className="text-xs text-white/40 cursor-pointer hover:text-white/60 transition-colors"
+                    onClick={() => addFilter('rhythm_feel', node.sonic_dna.rhythm_feel)}
+                  >
                     Rhythm: <span className="text-white/60">{node.sonic_dna.rhythm_feel}</span>
                   </div>
                 )}
@@ -371,7 +485,6 @@ const Sidebar = ({ node, links, onClose }) => {
               Connections ({nodeLinks.length})
             </h3>
             
-            {/* Type filter pills */}
             {linkTypes.length > 1 && (
               <div className="flex flex-wrap gap-1.5 mb-3">
                 <button

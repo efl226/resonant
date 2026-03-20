@@ -8,13 +8,11 @@ import { loadGraphData, loadClusterData } from './api/client';
 import FALLBACK_DATA from './data/songsseed.json';
 import './index.css';
 
-// ─── Image cache to prevent flickering ───
 const imageCache = new Map();
 
 function getCachedImage(src) {
   if (!src) return null;
   if (imageCache.has(src)) return imageCache.get(src);
-  
   const img = new Image();
   img.crossOrigin = "Anonymous";
   img.src = src;
@@ -25,13 +23,16 @@ function getCachedImage(src) {
 export default function App() {
   const graphRef = useRef();
   
+  const [fullGraphData, setFullGraphData] = useState(FALLBACK_DATA);
   const [graphData, setGraphData] = useState(FALLBACK_DATA);
   const [clusters, setClusters] = useState([]);
+  const [allClusters, setAllClusters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('graph');
   const [selectedNode, setSelectedNode] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
+  const [searchActive, setSearchActive] = useState(false);
 
   useEffect(() => {
     Promise.all([loadGraphData(), loadClusterData()])
@@ -48,7 +49,10 @@ export default function App() {
           }
           return node;
         });
-        setGraphData({ nodes: processedNodes, links: data.links });
+        const processed = { nodes: processedNodes, links: data.links };
+        setFullGraphData(processed);
+        setGraphData(processed);
+        setAllClusters(clusterData.clusters || []);
         setClusters(clusterData.clusters || []);
         setLoading(false);
         console.log(`[Resonant] Graph data ready. ${clusterData.clusters?.length || 0} clusters loaded`);
@@ -84,7 +88,7 @@ export default function App() {
     fg.d3ReheatSimulation();
   }, [loading, graphData]);
 
-  // ─── Arrow key navigation ───
+  // Arrow key navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!selectedNode || !graphRef.current) return;
@@ -105,19 +109,13 @@ export default function App() {
 
       graphData.nodes.forEach(node => {
         if (node.id === selectedNode.id) return;
-
         const dx = node.x - selectedNode.x;
         const dy = node.y - selectedNode.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-
         if (distance < 1) return;
-
         const alignment = (dx * dir.x + dy * dir.y) / distance;
-
         if (alignment < 0.3) return;
-
         const score = alignment - (distance / 1000);
-
         if (score > bestScore) {
           bestScore = score;
           bestNode = node;
@@ -133,6 +131,62 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedNode, graphData]);
+
+  // ─── Search filtering ───
+  const handleSearchResults = useCallback((resultIds) => {
+    if (!resultIds || resultIds.length === 0) {
+      // Restore full graph
+      setGraphData(fullGraphData);
+      setClusters(allClusters);
+      setSearchActive(false);
+      setSelectedNode(null);
+      if (graphRef.current) {
+        setTimeout(() => graphRef.current.zoomToFit(800), 100);
+      }
+      return;
+    }
+
+    // Filter to only matching nodes
+    const idSet = new Set(resultIds);
+    const filteredNodes = fullGraphData.nodes.filter(n => idSet.has(n.id));
+    
+    // Only keep links where both songs are in the results
+    const filteredLinks = fullGraphData.links.filter(link => {
+      const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+      const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+      return idSet.has(sourceId) && idSet.has(targetId);
+    });
+
+    setGraphData({ nodes: filteredNodes, links: filteredLinks });
+    
+    // Filter clusters to only those with songs in results
+    const filteredClusters = allClusters.filter(cluster => {
+      return cluster.songs?.some(s => {
+        return filteredNodes.some(n => 
+          n.name === s.name && n.artist === s.artist
+        );
+      });
+    });
+    setClusters(filteredClusters);
+    
+    setSearchActive(true);
+    setSelectedNode(null);
+
+    if (graphRef.current) {
+      setTimeout(() => graphRef.current.zoomToFit(800, 50), 300);
+    }
+  }, [fullGraphData, allClusters]);
+
+  const handleReset = useCallback(() => {
+    setGraphData(fullGraphData);
+    setClusters(allClusters);
+    setSearchActive(false);
+    setSelectedNode(null);
+    setActiveFilter(null);
+    if (graphRef.current) {
+      setTimeout(() => graphRef.current.zoomToFit(800), 100);
+    }
+  }, [fullGraphData, allClusters]);
 
   const filteredNodeIds = useMemo(() => {
     if (!activeFilter) return null;
@@ -194,7 +248,13 @@ export default function App() {
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: '#050505', overflow: 'hidden', position: 'relative', fontFamily: 'sans-serif' }}>
 
-      <SearchBar data={graphData} onSelect={handleNodeClick} />
+      <SearchBar 
+        data={fullGraphData} 
+        onSelect={handleNodeClick} 
+        onSearchResults={handleSearchResults}
+        onReset={handleReset}
+        searchActive={searchActive}
+      />
       
 
       <Sidebar 
@@ -224,9 +284,7 @@ export default function App() {
           linkDirectionalParticleSpeed={0.005}
 
           onNodeClick={handleNodeClick}
-          onNodeHover={(node) => {
-            setHoveredNode(node);
-          }}
+          onNodeHover={(node) => setHoveredNode(node)}
           onBackgroundClick={handleBackgroundClick}
 
           onNodeDragEnd={node => {
@@ -249,10 +307,7 @@ export default function App() {
                 const by = blob.y + Math.cos(time * 0.7 + ci * 3 + bi * 1.5) * drift;
                 const br = blob.radius + Math.sin(time * 0.5 + bi * 2) * (blob.radius * 0.05);
 
-                const gradient = ctx.createRadialGradient(
-                  bx, by, 0,
-                  bx, by, br
-                );
+                const gradient = ctx.createRadialGradient(bx, by, 0, bx, by, br);
                 gradient.addColorStop(0, hexToRgba(color, blob.opacity));
                 gradient.addColorStop(0.5, hexToRgba(color, blob.opacity * 0.5));
                 gradient.addColorStop(1, hexToRgba(color, 0));
@@ -298,7 +353,6 @@ export default function App() {
             }
             ctx.restore();
 
-            // Subtle ring around all nodes
             ctx.beginPath();
             ctx.arc(node.x, node.y, size/2 + 1, 0, 2 * Math.PI);
             ctx.strokeStyle = node.visual_dna?.primary_color 
