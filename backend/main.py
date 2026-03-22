@@ -41,11 +41,11 @@ def health():
 
 
 @app.get("/api/graph")
-def get_graph():
-    """The main endpoint — returns everything the frontend needs."""
+def get_graph(collection: str = "default"):
+    """The main endpoint — returns graph data for a specific collection."""
     conn = psycopg.connect(DATABASE_URL)
     cur = conn.cursor()
-
+ 
     cur.execute("""
         SELECT id, name, artist, album, year, img,
                bpm, key, energy, duration, prominent_instruments,
@@ -61,102 +61,74 @@ def get_graph():
                lyrics, lyrics_source,
                is_live, spotify_uri
         FROM songs
-    """)
-
+        WHERE collection_id = %s
+    """, (collection,))
+ 
     nodes = []
     for row in cur.fetchall():
-        # Parse JSONB fields
         musician_credits = row[38]
         if isinstance(musician_credits, str):
-            try:
-                musician_credits = json.loads(musician_credits)
-            except:
-                musician_credits = None
+            try: musician_credits = json.loads(musician_credits)
+            except: musician_credits = None
         
         samples_from = row[39]
         if isinstance(samples_from, str):
-            try:
-                samples_from = json.loads(samples_from)
-            except:
-                samples_from = None
-
-        # Trim lyrics for the graph response (full lyrics available via /api/songs/:id)
+            try: samples_from = json.loads(samples_from)
+            except: samples_from = None
+ 
         lyrics_preview = None
         if row[42]:
             lyrics_preview = row[42][:300] + "..." if len(row[42]) > 300 else row[42]
-
+ 
         nodes.append({
-            "id": row[0],
-            "name": row[1],
-            "artist": row[2],
-            "album": row[3],
-            "year": row[4],
-            "img": row[5],
+            "id": row[0], "name": row[1], "artist": row[2],
+            "album": row[3], "year": row[4], "img": row[5],
             "sonic_dna": {
-                "bpm": row[6],
-                "key": row[7],
-                "energy": row[8],
-                "duration": row[9],
-                "prominent_instruments": row[10] or [],
-                "scale": row[25],
-                "mode": row[26],
-                "time_signature": row[27],
-                "key_changes": row[28],
-                "key_changes_detail": row[29] or [],
-                "energy_shape": row[30],
-                "bass_weight": row[31],
-                "mid_weight": row[32],
-                "treble_weight": row[33],
-                "vocal_type": row[34],
-                "rhythm_feel": row[35],
+                "bpm": row[6], "key": row[7], "energy": row[8],
+                "duration": row[9], "prominent_instruments": row[10] or [],
+                "scale": row[25], "mode": row[26], "time_signature": row[27],
+                "key_changes": row[28], "key_changes_detail": row[29] or [],
+                "energy_shape": row[30], "bass_weight": row[31],
+                "mid_weight": row[32], "treble_weight": row[33],
+                "vocal_type": row[34], "rhythm_feel": row[35],
             },
             "genetic_dna": {
-                "producer": row[11],
-                "mixing_engineer": row[12],
-                "studio": row[13],
-                "songwriter": row[14] or [],
-                "featuring": row[15] or [],
-                "label": row[16],
-                "country_recorded": row[36],
-                "conductor": row[37],
+                "producer": row[11], "mixing_engineer": row[12],
+                "studio": row[13], "songwriter": row[14] or [],
+                "featuring": row[15] or [], "label": row[16],
+                "country_recorded": row[36], "conductor": row[37],
                 "musician_credits": musician_credits,
                 "samples_from": samples_from,
             },
             "visual_dna": {
-                "primary_color": row[17],
-                "palette": row[18] or [],
+                "primary_color": row[17], "palette": row[18] or [],
                 "texture": row[19],
             },
             "semantic_dna": {
-                "mood": row[20] or [],
-                "themes": row[21] or [],
-                "ai_summary": row[22],
-                "fun_fact": row[40],
+                "mood": row[20] or [], "themes": row[21] or [],
+                "ai_summary": row[22], "fun_fact": row[40],
                 "sonic_fingerprint": row[41],
             },
             "lyrics_preview": lyrics_preview,
             "has_lyrics": row[42] is not None,
             "is_live": row[44],
             "spotify_uri": row[45],
-            "umap_x": row[23],
-            "umap_y": row[24],
+            "umap_x": row[23], "umap_y": row[24],
         })
-
-    # Fetch all links
-    cur.execute("SELECT source_id, target_id, reason, score, type FROM links")
-    links = []
-    for row in cur.fetchall():
-        links.append({
-            "source": row[0],
-            "target": row[1],
-            "reason": row[2],
-            "score": row[3],
-            "type": row[4],
-        })
-
+ 
+    # Get links for this collection
+    song_ids = [n["id"] for n in nodes]
+    if song_ids:
+        cur.execute("""
+            SELECT source_id, target_id, reason, score, type FROM links
+            WHERE source_id = ANY(%s) AND target_id = ANY(%s)
+        """, (song_ids, song_ids))
+        links = [{"source": r[0], "target": r[1], "reason": r[2], "score": r[3], "type": r[4]} for r in cur.fetchall()]
+    else:
+        links = []
+        
     cur.close()
     conn.close()
-
     return {"nodes": nodes, "links": links}
 
 
@@ -215,8 +187,15 @@ def get_song(song_id: str):
 
 
 @app.get("/api/clusters")
-def get_clusters():
-    """Return cluster regions for the graph visualization."""
+def get_clusters(collection: str = "default"):
+    """Return cluster regions for a specific collection."""
+    # Try collection-specific clusters first
+    try:
+        with open(f"pipeline/output/clusters_{collection}.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        pass
+    # Fall back to default
     try:
         with open("pipeline/output/clusters.json", "r") as f:
             return json.load(f)
