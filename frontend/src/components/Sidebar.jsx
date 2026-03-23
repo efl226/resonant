@@ -11,9 +11,13 @@ const linkTypeConfig = {
   samples: { label: 'SAMPLES', color: '#E8724A', icon: '⟲' },
   shared_musician: { label: 'SHARED MUSICIAN', color: '#6BCB77', icon: '♫' },
   same_producer: { label: 'SAME PRODUCER', color: '#B84AE8', icon: '◉' },
-  same_artist: { label: 'SAME ARTIST', color: '#4A9EE8', icon: '●' },
-  same_key_bpm: { label: 'HARMONIC MATCH', color: '#E8C94A', icon: '♪' },
+  same_songwriter: { label: 'SAME SONGWRITER', color: '#D44AE8', icon: '✎' },
+  same_label: { label: 'SAME LABEL', color: '#8B9FE8', icon: '◎' },
+  same_studio: { label: 'SAME STUDIO', color: '#9B72CF', icon: '⌂' },
   shared_instruments: { label: 'SHARED INSTRUMENTS', color: '#4AE8D4', icon: '◈' },
+  harmonic_bridge: { label: 'HARMONIC BRIDGE', color: '#E8C94A', icon: '♪' },
+  same_key_bpm: { label: 'HARMONIC MATCH', color: '#E8C94A', icon: '♪' },
+  same_artist: { label: 'SAME ARTIST', color: '#4A9EE8', icon: '●' },
   same_mood: { label: 'MOOD', color: '#E84A6A', icon: '◐' },
   same_feel: { label: 'FEEL', color: '#8B9FE8', icon: '∿' },
 };
@@ -397,6 +401,18 @@ const Sidebar = ({ node, links, onClose, onPlay }) => {
                   </div>
                 </div>
               )}
+              {node.genetic_dna?.label && (
+                <div>
+                  <div className="text-white/30 mb-0.5">LABEL</div>
+                  <div 
+                    className="text-white/80 cursor-pointer hover:text-white transition-colors"
+                    onClick={() => addFilter('label', node.genetic_dna.label)}
+                    title={`Filter by label: ${node.genetic_dna.label}`}
+                  >
+                    {node.genetic_dna.label}
+                  </div>
+                </div>
+              )}
               {node.genetic_dna?.studio && (
                 <div className="col-span-2">
                   <div className="text-white/30 mb-0.5">STUDIO</div>
@@ -573,7 +589,7 @@ const Sidebar = ({ node, links, onClose, onPlay }) => {
                         >
                           {config.icon} {config.label}
                         </span>
-                        <span className="text-[11px] text-white/35 truncate">{link.reason}</span>
+                        <span className="text-[11px] text-white/35 leading-relaxed">{link.reason}</span>
                       </div>
                     )}
                   </div>

@@ -1,14 +1,21 @@
 """
-Generate Structural Links — Final Version
-──────────────────────────────────────────
-Creates meaningful, explainable connections between songs.
-Includes: sampling, shared musicians, same producer,
-shared instruments (rarity-scored), same key/BPM, same mood.
+Generate Interesting Links
+──────────────────────────
+Only creates connections that are genuinely surprising.
+If a user could figure it out in 2 seconds, don't show it.
 
-Tier 1 (always interesting): sampling, shared musicians, same producer
-Tier 2 (on-click discovery): key/BPM, rare instruments, mood overlap
+Tier 1 (score 0.9+): Sampling, shared musician across artists, 
+                      cross-artist producer, cross-artist songwriter
+Tier 2 (score 0.7-0.9): Rare label, rare studio, rare shared instruments,
+                         cross-genre key+BPM match
 
-Caps at 5 links per node, prioritizing Tier 1.
+Removed: same artist, common moods, common instruments, same decade
+
+Max 5 per node. If nothing interesting, show nothing.
+
+Usage:
+    python generate_links.py
+    python generate_links.py --collection testuser
 """
 import json
 import psycopg
@@ -20,325 +27,344 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-conn = psycopg.connect(DATABASE_URL)
-cur = conn.cursor()
 
-# Fetch all songs with full data
-cur.execute("""
-    SELECT id, name, artist, bpm, key, mode, energy,
-           prominent_instruments, producer, mood, year,
-           studio, label, rhythm_feel, vocal_type,
-           musician_credits, samples_from, featuring
-    FROM songs
-""")
-rows = cur.fetchall()
-columns = ['id', 'name', 'artist', 'bpm', 'key', 'mode', 'energy',
-           'instruments', 'producer', 'mood', 'year',
-           'studio', 'label', 'rhythm_feel', 'vocal_type',
-           'musician_credits', 'samples_from', 'featuring']
-songs = []
-for row in rows:
-    s = dict(zip(columns, row))
-    # Parse JSONB fields
-    if isinstance(s['musician_credits'], str):
-        try:
-            s['musician_credits'] = json.loads(s['musician_credits'])
-        except:
-            s['musician_credits'] = {}
-    if not s['musician_credits']:
-        s['musician_credits'] = {}
-    if isinstance(s['samples_from'], str):
-        try:
-            s['samples_from'] = json.loads(s['samples_from'])
-        except:
-            s['samples_from'] = []
-    if not s['samples_from']:
-        s['samples_from'] = []
-    songs.append(s)
+def generate_links(collection_id=None):
+    conn = psycopg.connect(DATABASE_URL)
+    cur = conn.cursor()
 
-total_songs = len(songs)
-print(f"Analyzing {total_songs} songs for structural connections...\n")
+    # Fetch all songs with full data
+    if collection_id:
+        cur.execute("""
+            SELECT id, name, artist, bpm, key, mode, energy,
+                   prominent_instruments, producer, mood, year,
+                   studio, label, rhythm_feel, vocal_type,
+                   musician_credits, samples_from, songwriter,
+                   cluster_id
+            FROM songs WHERE collection_id = %s
+        """, (collection_id,))
+    else:
+        cur.execute("""
+            SELECT id, name, artist, bpm, key, mode, energy,
+                   prominent_instruments, producer, mood, year,
+                   studio, label, rhythm_feel, vocal_type,
+                   musician_credits, samples_from, songwriter,
+                   cluster_id
+            FROM songs
+        """)
 
-# Build lookup by name for sampling cross-references
-song_lookup = {}
-for s in songs:
-    key_name = f"{s['name'].lower().split(' - ')[0].strip()}"
-    song_lookup[key_name] = s['id']
-    # Also index by just the core name without remaster tags
-    clean = s['name'].lower().replace('- remastered', '').replace('- remaster', '').replace('2009', '').replace('2011', '').replace('2017', '').replace('2015', '').replace('2019', '').replace('2020', '').strip()
-    song_lookup[clean] = s['id']
+    rows = cur.fetchall()
+    columns = ['id', 'name', 'artist', 'bpm', 'key', 'mode', 'energy',
+               'instruments', 'producer', 'mood', 'year',
+               'studio', 'label', 'rhythm_feel', 'vocal_type',
+               'musician_credits', 'samples_from', 'songwriter',
+               'cluster_id']
+    songs = []
+    for row in rows:
+        s = dict(zip(columns, row))
+        # Parse JSONB
+        if isinstance(s['musician_credits'], str):
+            try: s['musician_credits'] = json.loads(s['musician_credits'])
+            except: s['musician_credits'] = {}
+        if not s['musician_credits']: s['musician_credits'] = {}
+        if isinstance(s['samples_from'], str):
+            try: s['samples_from'] = json.loads(s['samples_from'])
+            except: s['samples_from'] = []
+        if not s['samples_from']: s['samples_from'] = []
+        if not s['songwriter']: s['songwriter'] = []
+        songs.append(s)
 
-# ─── Compute rarity scores ───
-instrument_counts = Counter()
-mood_counts = Counter()
-producer_counts = Counter()
-key_counts = Counter()
-musician_song_count = Counter()  # How many songs each musician appears on
+    total = len(songs)
+    print(f"Analyzing {total} songs for interesting connections...\n")
 
-for s in songs:
-    if s['instruments']:
-        for inst in s['instruments']:
-            instrument_counts[inst.lower()] += 1
-    if s['mood']:
-        for m in s['mood']:
-            mood_counts[m.lower()] += 1
-    if s['producer']:
-        producer_counts[s['producer']] += 1
-    if s['key']:
-        key_counts[s['key']] += 1
-    if s['musician_credits']:
-        for musician in s['musician_credits'].keys():
-            musician_song_count[musician] += 1
+    # ─── Compute rarity ───
+    instrument_counts = Counter()
+    label_counts = Counter()
+    studio_counts = Counter()
+    producer_counts = Counter()
+    musician_song_count = Counter()
+
+    # Common instruments to always skip
+    BORING_INSTRUMENTS = {
+        'drums', 'guitar', 'bass', 'bass guitar', 'electric guitar',
+        'acoustic guitar', 'vocals', 'piano', 'keyboard', 'percussion',
+        'backing vocals', 'lead vocals', 'voice', 'drum machine',
+        'synthesizer', 'synth', 'keys',
+    }
+
+    for s in songs:
+        if s['instruments']:
+            for inst in s['instruments']:
+                instrument_counts[inst.lower()] += 1
+        if s['label']:
+            label_counts[s['label']] += 1
+        if s['studio']:
+            studio_counts[s['studio']] += 1
+        if s['producer']:
+            producer_counts[s['producer']] += 1
+        if s['musician_credits']:
+            for musician in s['musician_credits'].keys():
+                musician_song_count[musician] += 1
+
+    def rarity(count):
+        if total == 0 or count == 0: return 0
+        freq = count / total
+        if freq > 0.4: return 0      # Too common
+        if freq > 0.25: return 0.2
+        if freq > 0.1: return 0.5
+        if freq > 0.04: return 0.8
+        return 1.0                    # Very rare
+
+    def is_different_artist(a, b):
+        """Check if two songs are by genuinely different artists."""
+        a_artist = a['artist'].split(',')[0].strip().lower()
+        b_artist = b['artist'].split(',')[0].strip().lower()
+        return a_artist != b_artist
+
+    def is_different_cluster(a, b):
+        """Check if two songs are in different clusters."""
+        if a['cluster_id'] is None or b['cluster_id'] is None:
+            return True  # Unclustered songs count as different
+        return a['cluster_id'] != b['cluster_id']
+
+    # ─── Clear old links ───
+    if collection_id:
+        cur.execute("DELETE FROM links WHERE collection_id = %s", (collection_id,))
+    else:
+        cur.execute("DELETE FROM links")
+    conn.commit()
+
+    # ─── Find interesting connections ───
+    all_links = []
+
+    for i in range(len(songs)):
+        for j in range(i + 1, len(songs)):
+            a = songs[i]
+            b = songs[j]
+
+            # ═══════════════════════════════════
+            # TIER 1: Genuinely surprising
+            # ═══════════════════════════════════
+
+            # Sampling — Song A samples Song B (both in collection)
+            for sample in a.get('samples_from', []):
+                sampled_name = sample.get('sampled_song', '').lower().strip()
+                sampled_artist = sample.get('sampled_artist', '').lower().strip()
+                b_name = b['name'].lower().split(' - ')[0].strip()
+                b_artist = b['artist'].lower().split(',')[0].strip()
+                if (sampled_name and b_name and
+                        (sampled_name in b_name or b_name in sampled_name) and
+                        (sampled_artist in b_artist or b_artist in sampled_artist)):
+                    element = sample.get('element', 'sample')
+                    all_links.append((a['id'], b['id'],
+                        f"Samples \"{b['name']}\" ({element})",
+                        "samples", 0.98))
+
+            # Reverse sampling check
+            for sample in b.get('samples_from', []):
+                sampled_name = sample.get('sampled_song', '').lower().strip()
+                sampled_artist = sample.get('sampled_artist', '').lower().strip()
+                a_name = a['name'].lower().split(' - ')[0].strip()
+                a_artist = a['artist'].lower().split(',')[0].strip()
+                if (sampled_name and a_name and
+                        (sampled_name in a_name or a_name in sampled_name) and
+                        (sampled_artist in a_artist or a_artist in sampled_artist)):
+                    element = sample.get('element', 'sample')
+                    all_links.append((b['id'], a['id'],
+                        f"Samples \"{a['name']}\" ({element})",
+                        "samples", 0.98))
+
+            # Shared musician across DIFFERENT artists
+            if a['musician_credits'] and b['musician_credits'] and is_different_artist(a, b):
+                a_artists_lower = set(n.strip().lower() for n in a['artist'].split(','))
+                b_artists_lower = set(n.strip().lower() for n in b['artist'].split(','))
+                shared = set(a['musician_credits'].keys()) & set(b['musician_credits'].keys())
+                
+                for musician in shared:
+                    # Skip if the musician IS one of the main artists
+                    if musician.lower() in a_artists_lower or musician.lower() in b_artists_lower:
+                        continue
+                    # Skip if this musician is on too many songs (session musicians on everything)
+                    if musician_song_count.get(musician, 0) > total * 0.15:
+                        continue
+                    
+                    role_a = a['musician_credits'].get(musician, '')
+                    role_b = b['musician_credits'].get(musician, '')
+                    all_links.append((a['id'], b['id'],
+                        f"{musician} plays on both ({role_a} / {role_b})",
+                        "shared_musician", 0.92))
+                    break  # Only one musician link per pair
+
+            # Same producer across DIFFERENT artists
+            if (a['producer'] and b['producer'] and a['producer'] == b['producer']
+                    and is_different_artist(a, b)):
+                # Skip self-produced artists
+                a_main = a['artist'].split(',')[0].strip().lower()
+                b_main = b['artist'].split(',')[0].strip().lower()
+                prod_lower = a['producer'].lower()
+                if prod_lower != a_main and prod_lower != b_main:
+                    r = rarity(producer_counts[a['producer']])
+                    if r > 0.2:
+                        all_links.append((a['id'], b['id'],
+                            f"Both produced by {a['producer']}",
+                            "same_producer", 0.90))
+
+            # Same songwriter writing for DIFFERENT performing artists
+            if a['songwriter'] and b['songwriter'] and is_different_artist(a, b):
+                a_writers = set(w.strip().lower() for w in a['songwriter'])
+                b_writers = set(w.strip().lower() for w in b['songwriter'])
+                a_artists_lower = set(n.strip().lower() for n in a['artist'].split(','))
+                b_artists_lower = set(n.strip().lower() for n in b['artist'].split(','))
+                shared_writers = a_writers & b_writers
+                # Remove the performing artists themselves
+                interesting_writers = shared_writers - a_artists_lower - b_artists_lower
+                if interesting_writers:
+                    writer = list(interesting_writers)[0]
+                    # Find original case
+                    original = next((w for w in a['songwriter'] if w.strip().lower() == writer), writer)
+                    all_links.append((a['id'], b['id'],
+                        f"Both written by {original}",
+                        "same_songwriter", 0.90))
+
+            # ═══════════════════════════════════
+            # TIER 2: Interesting with conditions
+            # ═══════════════════════════════════
+
+            # Same rare label (different artists)
+            if (a['label'] and b['label'] and a['label'] == b['label']
+                    and is_different_artist(a, b)):
+                r = rarity(label_counts[a['label']])
+                if r > 0.4:
+                    all_links.append((a['id'], b['id'],
+                        f"Both on {a['label']}",
+                        "same_label", 0.70 + r * 0.15))
+
+            # Same rare studio (different artists)
+            if (a['studio'] and b['studio'] and a['studio'] == b['studio']
+                    and is_different_artist(a, b)):
+                r = rarity(studio_counts[a['studio']])
+                if r > 0.4:
+                    all_links.append((a['id'], b['id'],
+                        f"Both recorded at {a['studio']}",
+                        "same_studio", 0.70 + r * 0.15))
+
+            # Shared RARE instruments (different artists, skip boring ones)
+            if a['instruments'] and b['instruments'] and is_different_artist(a, b):
+                a_inst = set(i.lower() for i in a['instruments']) - BORING_INSTRUMENTS
+                b_inst = set(i.lower() for i in b['instruments']) - BORING_INSTRUMENTS
+                shared = a_inst & b_inst
+                if shared:
+                    # Check rarity of shared instruments
+                    rare_shared = [i for i in shared if rarity(instrument_counts.get(i, 0)) > 0.4]
+                    if rare_shared:
+                        inst_display = ', '.join(sorted(rare_shared)[:2])
+                        avg_r = sum(rarity(instrument_counts.get(i, 0)) for i in rare_shared) / len(rare_shared)
+                        all_links.append((a['id'], b['id'],
+                            f"Both feature {inst_display}",
+                            "shared_instruments", 0.70 + avg_r * 0.15))
+
+            # Cross-genre key + BPM match (ONLY if different clusters)
+            if (a['key'] and b['key'] and a['bpm'] and b['bpm']
+                    and a['key'] == b['key']
+                    and abs(a['bpm'] - b['bpm']) <= 8
+                    and is_different_artist(a, b)
+                    and is_different_cluster(a, b)):
+                all_links.append((a['id'], b['id'],
+                    f"Cross-genre harmonic match: {a['key']} at ~{int((a['bpm']+b['bpm'])/2)} BPM",
+                    "harmonic_bridge", 0.78))
+
+    print(f"Total interesting connections found: {len(all_links)}")
+
+    # ─── Deduplicate ───
+    seen = set()
+    deduped = []
+    for link in all_links:
+        pair = tuple(sorted([link[0], link[1]]))
+        pair_type = (pair, link[3])
+        if pair_type not in seen:
+            seen.add(pair_type)
+            deduped.append(link)
+    all_links = deduped
+
+    print(f"After dedup: {len(all_links)}")
+
+    # ─── Cap at 5 per node, prioritize highest scores ───
+    all_links.sort(key=lambda x: -x[4])
+    node_count = Counter()
+    final = []
+    seen_pairs = set()
+
+    for source, target, reason, ltype, score in all_links:
+        pair = tuple(sorted([source, target]))
+        if pair in seen_pairs:
+            continue
+        if node_count[source] < 5 and node_count[target] < 5:
+            final.append((source, target, reason, ltype, score))
+            seen_pairs.add(pair)
+            node_count[source] += 1
+            node_count[target] += 1
+
+    print(f"After capping at 5/node: {len(final)} links\n")
+
+    # ─── Insert ───
+    coll_prefix = f"{collection_id}-" if collection_id else ""
+    for i, (source, target, reason, ltype, score) in enumerate(final):
+        cur.execute("""
+            INSERT INTO links (id, source_id, target_id, reason, score, type, collection_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (f"{coll_prefix}link-{i}", source, target, reason,
+              round(score, 3), ltype, collection_id or 'default'))
+    conn.commit()
+
+    # ─── Summary ───
+    type_counts = Counter(l[3] for l in final)
+    print(f"{'Type':<25} {'Count':>6}")
+    print(f"{'='*35}")
+    for ltype, count in type_counts.most_common():
+        print(f"  {ltype:<23} {count:>4}")
+
+    # Show the connections
+    if final:
+        print(f"\nAll connections:")
+        print(f"{'='*70}")
+        for source, target, reason, ltype, score in final:
+            s = next((s for s in songs if s['id'] == source), {})
+            t = next((s for s in songs if s['id'] == target), {})
+            print(f"  {s.get('name', '?')} ({s.get('artist', '?')})")
+            print(f"    ↔ {t.get('name', '?')} ({t.get('artist', '?')})")
+            print(f"    [{ltype}] {reason}")
+            print()
+
+    # Bridge songs
+    songs_with_cross = set()
+    for source, target, reason, ltype, score in final:
+        s = next((s for s in songs if s['id'] == source), {})
+        t = next((s for s in songs if s['id'] == target), {})
+        if s.get('cluster_id') != t.get('cluster_id') and s.get('cluster_id') is not None:
+            songs_with_cross.add(source)
+            songs_with_cross.add(target)
+
+    if songs_with_cross:
+        print(f"\nBridge songs (connect different clusters):")
+        for sid in songs_with_cross:
+            s = next((s for s in songs if s['id'] == sid), {})
+            print(f"  🌉 {s.get('artist')} — {s.get('name')} (cluster {s.get('cluster_id')})")
+
+    # Songs with no connections
+    connected = set()
+    for s, t, _, _, _ in final:
+        connected.add(s)
+        connected.add(t)
+    orphans = total - len(connected)
+    print(f"\nSongs with no connections: {orphans}/{total}")
+    print(f"(This is fine — it means those songs have nothing genuinely interesting to link to)")
+
+    cur.close()
+    conn.close()
 
 
-def rarity_score(count, total):
-    if total == 0 or count == 0:
-        return 0
-    frequency = count / total
-    if frequency > 0.5:
-        return 0
-    if frequency > 0.3:
-        return 0.2
-    if frequency > 0.15:
-        return 0.5
-    if frequency > 0.05:
-        return 0.8
-    return 1.0
-
-
-# ─── Clear old links ───
-cur.execute("DELETE FROM links")
-conn.commit()
-
-# ─── Generate all candidate links ───
-all_links = []  # (source_id, target_id, reason, type, score, tier)
-
-for i in range(len(songs)):
-    for j in range(i + 1, len(songs)):
-        a = songs[i]
-        b = songs[j]
-
-        # ═══ TIER 1: Always interesting ═══
-
-        # Same artist
-        if a['artist'] and b['artist'] and a['artist'] == b['artist']:
-            all_links.append((
-                a['id'], b['id'],
-                f"Same artist: {a['artist']}",
-                "same_artist", 0.95, 1
-            ))
-
-        # Sampling connections
-        for sample in a.get('samples_from', []):
-            sampled_name = sample.get('sampled_song', '').lower().strip()
-            sampled_artist = sample.get('sampled_artist', '').lower().strip()
-            # Check if the sampled song is song b
-            b_name = b['name'].lower().split(' - ')[0].strip()
-            b_artist = b['artist'].lower().split(',')[0].strip()
-            if (sampled_name and b_name and
-                    (sampled_name in b_name or b_name in sampled_name) and
-                    (sampled_artist in b_artist or b_artist in sampled_artist)):
-                element = sample.get('element', 'sample')
-                all_links.append((
-                    a['id'], b['id'],
-                    f"Samples \"{b['name']}\" by {b['artist']} ({element})",
-                    "samples", 0.98, 1
-                ))
-
-        # Check reverse — does b sample a?
-        for sample in b.get('samples_from', []):
-            sampled_name = sample.get('sampled_song', '').lower().strip()
-            sampled_artist = sample.get('sampled_artist', '').lower().strip()
-            a_name = a['name'].lower().split(' - ')[0].strip()
-            a_artist = a['artist'].lower().split(',')[0].strip()
-            if (sampled_name and a_name and
-                    (sampled_name in a_name or a_name in sampled_name) and
-                    (sampled_artist in a_artist or a_artist in sampled_artist)):
-                element = sample.get('element', 'sample')
-                all_links.append((
-                    b['id'], a['id'],
-                    f"Samples \"{a['name']}\" by {a['artist']} ({element})",
-                    "samples", 0.98, 1
-                ))
-
-        # Shared musicians (different artists but same person played on both)
-        if (a['musician_credits'] and b['musician_credits']
-                and a['artist'] != b['artist']):
-            shared_musicians = set(a['musician_credits'].keys()) & set(b['musician_credits'].keys())
-            # Filter out the main artists themselves
-            a_artist_names = set(n.strip().lower() for n in a['artist'].split(','))
-            b_artist_names = set(n.strip().lower() for n in b['artist'].split(','))
-            interesting_shared = [
-                m for m in shared_musicians
-                if m.lower() not in a_artist_names and m.lower() not in b_artist_names
-            ]
-            if interesting_shared:
-                musician = interesting_shared[0]
-                role_a = a['musician_credits'].get(musician, 'musician')
-                role_b = b['musician_credits'].get(musician, 'musician')
-                rarity = rarity_score(musician_song_count.get(musician, 0), total_songs)
-                if rarity > 0.3:
-                    all_links.append((
-                        a['id'], b['id'],
-                        f"Shared musician: {musician} ({role_a} / {role_b})",
-                        "shared_musician", 0.85 + rarity * 0.1, 1
-                    ))
-
-        # Same producer (different artists)
-        if (a['producer'] and b['producer']
-                and a['producer'] == b['producer']
-                and a['artist'] != b['artist']):
-            prod_rarity = rarity_score(producer_counts[a['producer']], total_songs)
-            if prod_rarity > 0.3:
-                all_links.append((
-                    a['id'], b['id'],
-                    f"Same producer: {a['producer']}",
-                    "same_producer", 0.85 + prod_rarity * 0.1, 1
-                ))
-
-        # ═══ TIER 2: Discovery links ═══
-
-        # Same key + similar BPM
-        if (a['key'] and b['key'] and a['bpm'] and b['bpm']
-                and a['key'] == b['key']
-                and abs(a['bpm'] - b['bpm']) <= 8
-                and a['artist'] != b['artist']):
-            key_rarity = rarity_score(key_counts[a['key']], total_songs)
-            if key_rarity > 0.2:
-                all_links.append((
-                    a['id'], b['id'],
-                    f"Same key ({a['key']}) & similar BPM ({a['bpm']:.0f} vs {b['bpm']:.0f})",
-                    "same_key_bpm", 0.65 + key_rarity * 0.2, 2
-                ))
-
-        # Shared rare instruments (case-insensitive, at least 2)
-        if a['instruments'] and b['instruments']:
-            a_inst = set(i.lower() for i in a['instruments'])
-            b_inst = set(i.lower() for i in b['instruments'])
-            shared = a_inst & b_inst
-            if len(shared) >= 2:
-                avg_rarity = sum(rarity_score(instrument_counts.get(inst, 0), total_songs) for inst in shared) / len(shared)
-                if avg_rarity > 0.4:
-                    shared_list = ', '.join(sorted(shared)[:3])
-                    all_links.append((
-                        a['id'], b['id'],
-                        f"Shared instruments: {shared_list}",
-                        "shared_instruments", 0.6 + avg_rarity * 0.25, 2
-                    ))
-
-        # Shared rare moods (case-insensitive, at least 2)
-        if a['mood'] and b['mood']:
-            a_moods = set(m.lower() for m in a['mood'])
-            b_moods = set(m.lower() for m in b['mood'])
-            shared_moods = a_moods & b_moods
-            if len(shared_moods) >= 2:
-                avg_rarity = sum(rarity_score(mood_counts.get(m, 0), total_songs) for m in shared_moods) / len(shared_moods)
-                if avg_rarity > 0.3:
-                    mood_list = ', '.join(sorted(shared_moods)[:3])
-                    all_links.append((
-                        a['id'], b['id'],
-                        f"Similar mood: {mood_list}",
-                        "same_mood", 0.55 + avg_rarity * 0.2, 2
-                    ))
-
-        # Same uncommon rhythm + mode
-        if (a['rhythm_feel'] and b['rhythm_feel']
-                and a['mode'] and b['mode']
-                and a['rhythm_feel'] == b['rhythm_feel']
-                and a['mode'] == b['mode']
-                and a['rhythm_feel'] != 'straight'
-                and a['artist'] != b['artist']):
-            all_links.append((
-                a['id'], b['id'],
-                f"Both {a['rhythm_feel']} and {a['mode']}",
-                "same_feel", 0.6, 2
-            ))
-
-print(f"Total candidate links: {len(all_links)}")
-
-# Count by tier
-tier1 = sum(1 for l in all_links if l[5] == 1)
-tier2 = sum(1 for l in all_links if l[5] == 2)
-print(f"  Tier 1 (always interesting): {tier1}")
-print(f"  Tier 2 (discovery): {tier2}")
-
-# ─── Cap at 5 links per node, prioritizing Tier 1 ───
-# Sort: tier 1 first, then by score descending
-all_links.sort(key=lambda x: (-x[5] == 1, -x[4]))
-# Actually sort tier 1 first (tier 1 = lower number = higher priority)
-all_links.sort(key=lambda x: (x[5], -x[4]))
-
-node_link_count = Counter()
-MAX_LINKS_PER_NODE = 5
-final_links = []
-seen = set()
-
-for source, target, reason, link_type, score, tier in all_links:
-    pair = tuple(sorted([source, target]))
-    if pair in seen:
-        continue
-    if (node_link_count[source] < MAX_LINKS_PER_NODE
-            and node_link_count[target] < MAX_LINKS_PER_NODE):
-        final_links.append((source, target, reason, link_type, score, tier))
-        seen.add(pair)
-        node_link_count[source] += 1
-        node_link_count[target] += 1
-
-print(f"After capping at {MAX_LINKS_PER_NODE} per node: {len(final_links)} links")
-
-# ─── Insert final links ───
-for i, (source, target, reason, link_type, score, tier) in enumerate(final_links):
-    cur.execute("""
-        INSERT INTO links (id, source_id, target_id, reason, score, type)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, (
-        f"struct-{i}",
-        source, target, reason, round(score, 3), link_type,
-    ))
-
-conn.commit()
-
-# ─── Summary ───
-cur.execute("""
-    SELECT type, COUNT(*), ROUND(AVG(score)::numeric, 2)
-    FROM links
-    GROUP BY type
-    ORDER BY AVG(score) DESC
-""")
-
-print(f"\n{'='*55}")
-print(f"{'Type':<25} {'Count':>6} {'Avg Score':>10}")
-print(f"{'='*55}")
-for row in cur.fetchall():
-    print(f"{row[0]:<25} {row[1]:>6} {row[2]:>10}")
-
-# Show Tier 1 connections
-print(f"\nTier 1 — Most Interesting Connections:")
-print(f"{'='*70}")
-cur.execute("""
-    SELECT s1.name, s1.artist, s2.name, s2.artist, l.reason, l.type, l.score
-    FROM links l
-    JOIN songs s1 ON l.source_id = s1.id
-    JOIN songs s2 ON l.target_id = s2.id
-    WHERE l.type IN ('samples', 'shared_musician', 'same_producer')
-    ORDER BY l.score DESC
-    LIMIT 20
-""")
-for row in cur.fetchall():
-    print(f"  {row[0]} ({row[1]})")
-    print(f"    ↔ {row[2]} ({row[3]})")
-    print(f"    [{row[5]}] {row[4]}")
-    print()
-
-# Orphan check
-cur.execute("""
-    SELECT COUNT(*) FROM songs s
-    WHERE NOT EXISTS (
-        SELECT 1 FROM links WHERE source_id = s.id OR target_id = s.id
-    )
-""")
-orphans = cur.fetchone()[0]
-print(f"Songs with no connections: {orphans}")
-
-cur.close()
-conn.close()
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--collection", default=None)
+    args = parser.parse_args()
+    generate_links(args.collection)
