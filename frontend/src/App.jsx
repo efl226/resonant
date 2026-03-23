@@ -2,8 +2,9 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import SearchBar from './components/SearchBar';
 import Sidebar from './components/Sidebar';
-import PlayerBar from './components/PlayerBar';
+import NeuralFilters from './components/NeuralFilters'; 
 import TimelineView from './components/TimelineView';
+import PlayerBar from './components/PlayerBar';
 import { loadGraphData, loadClusterData } from './api/client';
 import FALLBACK_DATA from './data/songsseed.json';
 import './index.css';
@@ -19,6 +20,21 @@ function getCachedImage(src) {
   imageCache.set(src, img);
   return img;
 }
+
+const linkTypeColors = {
+  samples: '#E8724A',
+  shared_musician: '#6BCB77',
+  same_producer: '#B84AE8',
+  same_songwriter: '#D44AE8',
+  same_label: '#8B9FE8',
+  same_studio: '#9B72CF',
+  shared_instruments: '#4AE8D4',
+  harmonic_bridge: '#E8C94A',
+  same_key_bpm: '#E8C94A',
+  same_artist: '#4A9EE8',
+  same_mood: '#E84A6A',
+  same_feel: '#8B9FE8',
+};
 
 export default function App() {
   const graphRef = useRef();
@@ -61,12 +77,9 @@ export default function App() {
       .catch(() => setLoading(false));
   }, []);
 
-  // Apply UMAP gravity force
   useEffect(() => {
     if (!graphRef.current || loading) return;
-
     const fg = graphRef.current;
-
     const umapForce = (alpha) => {
       graphData.nodes.forEach(node => {
         if (node._targetX !== undefined && node._targetY !== undefined) {
@@ -76,38 +89,27 @@ export default function App() {
         }
       });
     };
-
     fg.d3Force('umap', umapForce);
-
     const charge = fg.d3Force('charge');
     if (charge) charge.strength(-30);
-
     const link = fg.d3Force('link');
     if (link) link.strength(0.02);
-
     fg.d3Force('center', null);
     fg.d3ReheatSimulation();
   }, [loading, graphData]);
 
-  // Arrow key navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!selectedNode || !graphRef.current) return;
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
-      
       e.preventDefault();
-
       const directions = {
-        'ArrowUp':    { x: 0, y: -1 },
-        'ArrowDown':  { x: 0, y: 1 },
-        'ArrowLeft':  { x: -1, y: 0 },
-        'ArrowRight': { x: 1, y: 0 },
+        'ArrowUp': { x: 0, y: -1 }, 'ArrowDown': { x: 0, y: 1 },
+        'ArrowLeft': { x: -1, y: 0 }, 'ArrowRight': { x: 1, y: 0 },
       };
-
       const dir = directions[e.key];
       let bestNode = null;
       let bestScore = -Infinity;
-
       graphData.nodes.forEach(node => {
         if (node.id === selectedNode.id) return;
         const dx = node.x - selectedNode.x;
@@ -117,65 +119,41 @@ export default function App() {
         const alignment = (dx * dir.x + dy * dir.y) / distance;
         if (alignment < 0.3) return;
         const score = alignment - (distance / 1000);
-        if (score > bestScore) {
-          bestScore = score;
-          bestNode = node;
-        }
+        if (score > bestScore) { bestScore = score; bestNode = node; }
       });
-
       if (bestNode) {
         graphRef.current.centerAt(bestNode.x, bestNode.y, 400);
         setSelectedNode(bestNode);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedNode, graphData]);
 
-  // ─── Search filtering ───
   const handleSearchResults = useCallback((resultIds) => {
     if (!resultIds || resultIds.length === 0) {
-      // Restore full graph
       setGraphData(fullGraphData);
       setClusters(allClusters);
       setSearchActive(false);
       setSelectedNode(null);
-      if (graphRef.current) {
-        setTimeout(() => graphRef.current.zoomToFit(800), 100);
-      }
+      if (graphRef.current) setTimeout(() => graphRef.current.zoomToFit(800), 100);
       return;
     }
-
-    // Filter to only matching nodes
     const idSet = new Set(resultIds);
     const filteredNodes = fullGraphData.nodes.filter(n => idSet.has(n.id));
-    
-    // Only keep links where both songs are in the results
     const filteredLinks = fullGraphData.links.filter(link => {
       const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
       const targetId = typeof link.target === 'object' ? link.target.id : link.target;
       return idSet.has(sourceId) && idSet.has(targetId);
     });
-
     setGraphData({ nodes: filteredNodes, links: filteredLinks });
-    
-    // Filter clusters to only those with songs in results
-    const filteredClusters = allClusters.filter(cluster => {
-      return cluster.songs?.some(s => {
-        return filteredNodes.some(n => 
-          n.name === s.name && n.artist === s.artist
-        );
-      });
-    });
+    const filteredClusters = allClusters.filter(cluster =>
+      cluster.songs?.some(s => filteredNodes.some(n => n.name === s.name && n.artist === s.artist))
+    );
     setClusters(filteredClusters);
-    
     setSearchActive(true);
     setSelectedNode(null);
-
-    if (graphRef.current) {
-      setTimeout(() => graphRef.current.zoomToFit(800, 50), 300);
-    }
+    if (graphRef.current) setTimeout(() => graphRef.current.zoomToFit(800, 50), 300);
   }, [fullGraphData, allClusters]);
 
   const handleReset = useCallback(() => {
@@ -184,9 +162,7 @@ export default function App() {
     setSearchActive(false);
     setSelectedNode(null);
     setActiveFilter(null);
-    if (graphRef.current) {
-      setTimeout(() => graphRef.current.zoomToFit(800), 100);
-    }
+    if (graphRef.current) setTimeout(() => graphRef.current.zoomToFit(800), 100);
   }, [fullGraphData, allClusters]);
 
   const filteredNodeIds = useMemo(() => {
@@ -207,7 +183,6 @@ export default function App() {
   const { highlightNodes, highlightLinks } = useMemo(() => {
     const nodes = new Set();
     const links = new Set();
-    
     if (filteredNodeIds) {
       filteredNodeIds.forEach(id => nodes.add(id));
     } else if (selectedNode) {
@@ -226,17 +201,15 @@ export default function App() {
 
   const handleNodeClick = useCallback((node) => {
     if (viewMode === 'graph' && graphRef.current) {
-        graphRef.current.centerAt(node.x, node.y, 800);
-        graphRef.current.zoom(4, 800);
+      graphRef.current.centerAt(node.x, node.y, 800);
+      graphRef.current.zoom(4, 800);
     }
     setSelectedNode(node);
   }, [viewMode]);
 
   const handleBackgroundClick = useCallback(() => {
     setSelectedNode(null);
-    if (viewMode === 'graph' && graphRef.current) {
-        graphRef.current.zoomToFit(800);
-    }
+    if (viewMode === 'graph' && graphRef.current) graphRef.current.zoomToFit(800);
   }, [viewMode]);
 
   const hexToRgba = (hex, alpha) => {
@@ -245,6 +218,12 @@ export default function App() {
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
+
+  const clusterMeta = useMemo(() => {
+    const map = {};
+    clusters.forEach(c => { map[c.id] = c; });
+    return map;
+  }, [clusters]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: '#050505', overflow: 'hidden', position: 'relative', fontFamily: 'sans-serif' }}>
@@ -259,31 +238,37 @@ export default function App() {
       
 
       <Sidebar 
-        node={selectedNode} 
-        links={graphData.links}               
-        onClose={handleBackgroundClick} 
-        onPlay={setPlayerNode}
+        node={selectedNode} links={graphData.links} onClose={handleBackgroundClick}
+        onPlay={setPlayerNode} onNavigate={handleNodeClick}
       />
+
+      <PlayerBar node={playerNode} onClose={() => setPlayerNode(null)} />
 
       {viewMode === 'timeline' ? (
         <TimelineView data={graphData} onSelect={handleNodeClick} />
       ) : (
         <ForceGraph2D
           ref={graphRef}
-          graphData={graphData}                
+          graphData={graphData}
           backgroundColor="#050505"
           nodeRelSize={12}
           nodeLabel={() => ''}
-          
           d3AlphaDecay={0.01}
           d3AlphaMin={0.001}
           d3VelocityDecay={0.3}
           enableNodeDrag={true}
           
-          linkColor={link => highlightLinks.has(link) ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0)'}
-          linkWidth={link => highlightLinks.has(link) ? 2 : 0}
-          linkDirectionalParticles={link => highlightLinks.has(link) ? 4 : 0}
+          linkColor={link => {
+            if (highlightLinks.has(link)) {
+              return linkTypeColors[link.type] || 'rgba(255,255,255,0.8)';
+            }
+            return 'rgba(0,0,0,0)';
+          }}
+          linkWidth={link => highlightLinks.has(link) ? 2.5 : 0}
+          linkDirectionalParticles={link => highlightLinks.has(link) ? 3 : 0}
           linkDirectionalParticleSpeed={0.005}
+          linkDirectionalParticleColor={link => linkTypeColors[link.type] || '#fff'}
+          linkLabel={() => ''}
 
           onNodeClick={handleNodeClick}
           onNodeHover={(node) => setHoveredNode(node)}
@@ -292,40 +277,71 @@ export default function App() {
           onNodeDragEnd={node => {
             node.fx = undefined;
             node.fy = undefined;
-            if (graphRef.current) {
-              graphRef.current.d3ReheatSimulation();
-            }
+            if (graphRef.current) graphRef.current.d3ReheatSimulation();
           }}
 
           onRenderFramePre={(ctx, globalScale) => {
             const time = Date.now() / 3000;
 
-            clusters.forEach((cluster, ci) => {
-              const { blobs, color, label, center_x, center_y, radius } = cluster;
-              
-              (blobs || []).forEach((blob, bi) => {
-                const drift = bi === 0 ? 0 : 8;
-                const bx = blob.x + Math.sin(time + ci * 2 + bi) * drift;
-                const by = blob.y + Math.cos(time * 0.7 + ci * 3 + bi * 1.5) * drift;
-                const br = blob.radius + Math.sin(time * 0.5 + bi * 2) * (blob.radius * 0.05);
+            const clusterGroups = {};
+            graphData.nodes.forEach(node => {
+              const cid = node.cluster_id;
+              if (cid === null || cid === undefined || cid === -1) return;
+              if (!clusterGroups[cid]) clusterGroups[cid] = [];
+              clusterGroups[cid].push(node);
+            });
 
+            Object.entries(clusterGroups).forEach(([cid, nodes]) => {
+              if (nodes.length < 2) return;
+
+              const meta = clusterMeta[parseInt(cid)] || {};
+              const color = meta.color || '#666';
+              const label = meta.label || '';
+
+              let cx = 0, cy = 0;
+              nodes.forEach(n => { cx += n.x; cy += n.y; });
+              cx /= nodes.length;
+              cy /= nodes.length;
+
+              let maxDist = 0;
+              nodes.forEach(n => {
+                const d = Math.sqrt((n.x - cx) ** 2 + (n.y - cy) ** 2);
+                if (d > maxDist) maxDist = d;
+              });
+              const radius = maxDist + 40;
+
+              const drawBlob = (bx, by, br, opacity) => {
                 const gradient = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-                gradient.addColorStop(0, hexToRgba(color, blob.opacity));
-                gradient.addColorStop(0.5, hexToRgba(color, blob.opacity * 0.5));
+                gradient.addColorStop(0, hexToRgba(color, opacity));
+                gradient.addColorStop(0.5, hexToRgba(color, opacity * 0.5));
                 gradient.addColorStop(1, hexToRgba(color, 0));
-
                 ctx.beginPath();
                 ctx.arc(bx, by, br, 0, 2 * Math.PI);
                 ctx.fillStyle = gradient;
                 ctx.fill();
-              });
+              };
 
-              if (globalScale < 1.5) {
-                const fontSize = Math.max(14, 20 / globalScale);
-                ctx.font = `600 ${fontSize}px Inter, sans-serif`;
+              drawBlob(cx, cy, radius, 0.08);
+
+              const cidNum = parseInt(cid);
+              for (let i = 0; i < 4; i++) {
+                const angle = (cidNum * 2 + i * 1.5) + Math.sin(time + i) * 0.3;
+                const dist = radius * (0.3 + Math.sin(time * 0.5 + i * 2) * 0.1);
+                const bx = cx + Math.cos(angle) * dist;
+                const by = cy + Math.sin(angle) * dist;
+                const br = radius * (0.5 + Math.sin(time * 0.7 + i) * 0.1);
+                drawBlob(bx, by, br, 0.05);
+              }
+
+              if (globalScale < 0.8 && label) {
+                const labelY = cy - radius - 25 / globalScale;
+                const fontSize = Math.max(10, 14 / globalScale);
+                ctx.font = `500 ${fontSize}px Inter, sans-serif`;
                 ctx.textAlign = 'center';
-                ctx.fillStyle = hexToRgba(color, 0.5);
-                ctx.fillText(label, center_x, center_y - radius * 0.65);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillText(label, cx + 1, labelY + 1);
+                ctx.fillStyle = hexToRgba(color, 0.45);
+                ctx.fillText(label, cx, labelY);
               }
             });
           }}
@@ -334,21 +350,18 @@ export default function App() {
             const isModeActive = filteredNodeIds || selectedNode;
             const isHighlighted = isModeActive ? (highlightNodes.has(node.id)) : true;
             const isSelected = selectedNode?.id === node.id;
-            
-            const alpha = isHighlighted ? 1 : 0.05; 
+            const alpha = isHighlighted ? 1 : 0.05;
             const size = isSelected ? 30 : 20;
 
             ctx.globalAlpha = alpha;
 
             const img = getCachedImage(node.img);
-            
             ctx.save();
             ctx.beginPath();
-            ctx.arc(node.x, node.y, size/2, 0, 2 * Math.PI);
+            ctx.arc(node.x, node.y, size / 2, 0, 2 * Math.PI);
             ctx.clip();
-            
             if (img && img.complete && img.naturalWidth > 0) {
-              ctx.drawImage(img, node.x - size/2, node.y - size/2, size, size);
+              ctx.drawImage(img, node.x - size / 2, node.y - size / 2, size, size);
             } else {
               ctx.fillStyle = node.visual_dna?.primary_color || "#333";
               ctx.fill();
@@ -356,16 +369,16 @@ export default function App() {
             ctx.restore();
 
             ctx.beginPath();
-            ctx.arc(node.x, node.y, size/2 + 1, 0, 2 * Math.PI);
-            ctx.strokeStyle = node.visual_dna?.primary_color 
-              ? `${node.visual_dna.primary_color}88` 
+            ctx.arc(node.x, node.y, size / 2 + 1, 0, 2 * Math.PI);
+            ctx.strokeStyle = node.visual_dna?.primary_color
+              ? `${node.visual_dna.primary_color}88`
               : 'rgba(255,255,255,0.3)';
             ctx.lineWidth = 1.5 / globalScale;
             ctx.stroke();
 
             if (isSelected || (activeFilter && isHighlighted)) {
               ctx.beginPath();
-              ctx.arc(node.x, node.y, size/2 + 3, 0, 2 * Math.PI);
+              ctx.arc(node.x, node.y, size / 2 + 3, 0, 2 * Math.PI);
               ctx.strokeStyle = activeFilter ? (node.visual_dna?.primary_color || '#fff') : '#fff';
               ctx.lineWidth = (activeFilter ? 4 : 2) / globalScale;
               ctx.stroke();
@@ -381,30 +394,25 @@ export default function App() {
               const smallFontSize = 10 / globalScale;
               ctx.font = `600 ${fontSize}px Inter, sans-serif`;
               ctx.textAlign = 'center';
-              
               const textWidth = ctx.measureText(label).width;
               const artistWidth = ctx.measureText(artistLabel).width;
               const bgWidth = Math.max(textWidth, artistWidth) + 8;
-              
+
               ctx.fillStyle = 'rgba(0,0,0,0.8)';
-              ctx.fillRect(node.x - bgWidth/2, node.y + size/2 + 2, bgWidth, fontSize + smallFontSize + 8);
-              
+              ctx.fillRect(node.x - bgWidth / 2, node.y + size / 2 + 2, bgWidth, fontSize + smallFontSize + 8);
+
               ctx.fillStyle = 'rgba(255,255,255,0.95)';
-              ctx.fillText(label, node.x, node.y + size/2 + fontSize + 4);
-              
+              ctx.fillText(label, node.x, node.y + size / 2 + fontSize + 4);
+
               ctx.font = `400 ${smallFontSize}px Inter, sans-serif`;
               ctx.fillStyle = 'rgba(255,255,255,0.5)';
-              ctx.fillText(artistLabel, node.x, node.y + size/2 + fontSize + smallFontSize + 6);
+              ctx.fillText(artistLabel, node.x, node.y + size / 2 + fontSize + smallFontSize + 6);
             }
-            
+
             ctx.globalAlpha = 1;
           }}
         />
       )}
-      <PlayerBar 
-        node={playerNode} 
-        onClose={() => setPlayerNode(null)} 
-      />
     </div>
   );
 }

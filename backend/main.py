@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import psycopg
 import json
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
@@ -22,14 +21,6 @@ app.add_middleware(
 )
 
 
-def get_db():
-    conn = psycopg.connect(DATABASE_URL)
-    try:
-        yield conn
-    finally:
-        conn.close()
-
-
 @app.get("/")
 def root():
     return {"name": "Resonant API", "version": "0.1.0"}
@@ -42,10 +33,9 @@ def health():
 
 @app.get("/api/graph")
 def get_graph(collection: str = "default"):
-    """The main endpoint — returns graph data for a specific collection."""
     conn = psycopg.connect(DATABASE_URL)
     cur = conn.cursor()
- 
+
     cur.execute("""
         SELECT id, name, artist, album, year, img,
                bpm, key, energy, duration, prominent_instruments,
@@ -59,11 +49,12 @@ def get_graph(collection: str = "default"):
                country_recorded, conductor, musician_credits, samples_from,
                fun_fact, sonic_fingerprint,
                lyrics, lyrics_source,
-               is_live, spotify_uri
+               is_live, spotify_uri,
+               cluster_id
         FROM songs
         WHERE collection_id = %s
     """, (collection,))
- 
+
     nodes = []
     for row in cur.fetchall():
         musician_credits = row[38]
@@ -75,11 +66,11 @@ def get_graph(collection: str = "default"):
         if isinstance(samples_from, str):
             try: samples_from = json.loads(samples_from)
             except: samples_from = None
- 
+
         lyrics_preview = None
         if row[42]:
             lyrics_preview = row[42][:300] + "..." if len(row[42]) > 300 else row[42]
- 
+
         nodes.append({
             "id": row[0], "name": row[1], "artist": row[2],
             "album": row[3], "year": row[4], "img": row[5],
@@ -113,10 +104,11 @@ def get_graph(collection: str = "default"):
             "has_lyrics": row[42] is not None,
             "is_live": row[44],
             "spotify_uri": row[45],
+            "cluster_id": row[46],
             "umap_x": row[23], "umap_y": row[24],
         })
- 
-    # Get links for this collection
+
+    # Get links
     song_ids = [n["id"] for n in nodes]
     if song_ids:
         cur.execute("""
@@ -126,7 +118,7 @@ def get_graph(collection: str = "default"):
         links = [{"source": r[0], "target": r[1], "reason": r[2], "score": r[3], "type": r[4]} for r in cur.fetchall()]
     else:
         links = []
-        
+
     cur.close()
     conn.close()
     return {"nodes": nodes, "links": links}
@@ -134,92 +126,66 @@ def get_graph(collection: str = "default"):
 
 @app.get("/api/songs/{song_id}")
 def get_song(song_id: str):
-    """Get a single song with FULL data including complete lyrics."""
     conn = psycopg.connect(DATABASE_URL)
     cur = conn.cursor()
-
     cur.execute("""
         SELECT id, name, artist, album, year, img, lyrics,
                musician_credits, samples_from, fun_fact, sonic_fingerprint,
                producer, label, songwriter, studio, country_recorded
         FROM songs WHERE id = %s
     """, (song_id,))
-    
     row = cur.fetchone()
     cur.close()
     conn.close()
-
     if not row:
         return {"error": "Not found"}, 404
-
     musician_credits = row[7]
     if isinstance(musician_credits, str):
-        try:
-            musician_credits = json.loads(musician_credits)
-        except:
-            musician_credits = None
-
+        try: musician_credits = json.loads(musician_credits)
+        except: musician_credits = None
     samples_from = row[8]
     if isinstance(samples_from, str):
-        try:
-            samples_from = json.loads(samples_from)
-        except:
-            samples_from = None
-
+        try: samples_from = json.loads(samples_from)
+        except: samples_from = None
     return {
-        "id": row[0],
-        "name": row[1],
-        "artist": row[2],
-        "album": row[3],
-        "year": row[4],
-        "img": row[5],
-        "lyrics": row[6],
-        "musician_credits": musician_credits,
-        "samples_from": samples_from,
-        "fun_fact": row[9],
-        "sonic_fingerprint": row[10],
-        "producer": row[11],
-        "label": row[12],
-        "songwriter": row[13],
-        "studio": row[14],
-        "country_recorded": row[15],
+        "id": row[0], "name": row[1], "artist": row[2],
+        "album": row[3], "year": row[4], "img": row[5],
+        "lyrics": row[6], "musician_credits": musician_credits,
+        "samples_from": samples_from, "fun_fact": row[9],
+        "sonic_fingerprint": row[10], "producer": row[11],
+        "label": row[12], "songwriter": row[13],
+        "studio": row[14], "country_recorded": row[15],
     }
 
 
 @app.get("/api/clusters")
 def get_clusters(collection: str = "default"):
-    """Return cluster regions for a specific collection."""
-    # Try collection-specific clusters first
     try:
         with open(f"pipeline/output/clusters_{collection}.json", "r") as f:
             return json.load(f)
     except FileNotFoundError:
         pass
-    # Fall back to default
     try:
         with open("pipeline/output/clusters.json", "r") as f:
             return json.load(f)
     except FileNotFoundError:
         return {"clusters": [], "unclustered_count": 0, "total_songs": 0}
-    
+
+
 @app.get("/api/search")
 def search_songs(q: str = "", limit: int = 20):
     if not q.strip():
         return {"query": "", "results": [], "total": 0}
-    sys.path.insert(0, os.path.dirname(__file__))
     from search import search
     return search(q, limit)
 
 
 @app.post("/api/filter-direct")
 def filter_direct(filters: dict):
-    """Run filters directly as SQL — used for breadcrumb changes."""
     conn = psycopg.connect(DATABASE_URL)
     cur = conn.cursor()
-    
     conditions = []
     params = []
-    
     if filters.get("artist"):
         conditions.append("artist ILIKE %s")
         params.append(f"%{filters['artist']}%")
@@ -280,19 +246,16 @@ def filter_direct(filters: dict):
             y_min, y_max = decade_map[filters["decade"]]
             conditions.append("year >= %s AND year <= %s")
             params.extend([y_min, y_max])
-    
     if not conditions:
         cur.close()
         conn.close()
         return {"results": [], "total": 0}
-    
     where_clause = " AND ".join(conditions)
     cur.execute(f"""
         SELECT id, name, artist, album, year, img, primary_color, mood, energy, bpm, key
         FROM songs WHERE {where_clause}
         ORDER BY artist, name
     """, params)
-    
     results = []
     for row in cur.fetchall():
         results.append({
@@ -300,7 +263,6 @@ def filter_direct(filters: dict):
             "year": row[4], "img": row[5], "primary_color": row[6],
             "mood": row[7] or [], "energy": row[8], "bpm": row[9], "key": row[10],
         })
-    
     cur.close()
     conn.close()
     return {"results": results, "total": len(results)}
@@ -308,10 +270,8 @@ def filter_direct(filters: dict):
 
 @app.get("/api/stats")
 def get_stats():
-    """Database-level statistics."""
     conn = psycopg.connect(DATABASE_URL)
     cur = conn.cursor()
-
     cur.execute("SELECT COUNT(*) FROM songs")
     total_songs = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM links")
@@ -320,13 +280,9 @@ def get_stats():
     artists = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM songs WHERE lyrics IS NOT NULL")
     with_lyrics = cur.fetchone()[0]
-
     cur.close()
     conn.close()
-
     return {
-        "total_songs": total_songs,
-        "total_links": total_links,
-        "artists": artists,
-        "with_lyrics": with_lyrics,
+        "total_songs": total_songs, "total_links": total_links,
+        "artists": artists, "with_lyrics": with_lyrics,
     }

@@ -69,7 +69,7 @@ const FilterPill = ({ value, filterKey, accentRgb }) => {
   );
 };
 
-const Sidebar = ({ node, links, onClose, onPlay }) => {
+const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
   const [showLyrics, setShowLyrics] = useState(false);
   const [activeConnectionType, setActiveConnectionType] = useState('all');
 
@@ -559,7 +559,12 @@ const Sidebar = ({ node, links, onClose, onPlay }) => {
                 return (
                   <div 
                     key={i} 
-                    className="p-3 rounded-lg transition-all duration-200 cursor-default"
+                    className="p-3 rounded-lg transition-all duration-200 cursor-pointer"
+                    onClick={() => {
+                      if (onNavigate && typeof otherNode === 'object') {
+                        onNavigate(otherNode);
+                      }
+                    }}
                     style={{
                       backgroundColor: `${config.color}08`,
                       border: `1px solid ${config.color}15`,
