@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import SearchBar from './components/SearchBar';
 import Sidebar from './components/Sidebar';
-import NeuralFilters from './components/NeuralFilters'; 
+import PlayerBar from './components/PlayerBar';
 import TimelineView from './components/TimelineView';
 import { loadGraphData, loadClusterData } from './api/client';
 import FALLBACK_DATA from './data/songsseed.json';
@@ -33,6 +33,7 @@ export default function App() {
   const [hoveredNode, setHoveredNode] = useState(null);
   const [activeFilter, setActiveFilter] = useState(null);
   const [searchActive, setSearchActive] = useState(false);
+  const [playerNode, setPlayerNode] = useState(null);
 
   useEffect(() => {
     Promise.all([loadGraphData(), loadClusterData()])
@@ -261,6 +262,7 @@ export default function App() {
         node={selectedNode} 
         links={graphData.links}               
         onClose={handleBackgroundClick} 
+        onPlay={setPlayerNode}
       />
 
       {viewMode === 'timeline' ? (
@@ -399,6 +401,10 @@ export default function App() {
           }}
         />
       )}
+      <PlayerBar 
+        node={playerNode} 
+        onClose={() => setPlayerNode(null)} 
+      />
     </div>
   );
 }

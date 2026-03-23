@@ -65,7 +65,7 @@ const FilterPill = ({ value, filterKey, accentRgb }) => {
   );
 };
 
-const Sidebar = ({ node, links, onClose }) => {
+const Sidebar = ({ node, links, onClose, onPlay }) => {
   const [showLyrics, setShowLyrics] = useState(false);
   const [activeConnectionType, setActiveConnectionType] = useState('all');
 
@@ -210,6 +210,17 @@ const Sidebar = ({ node, links, onClose }) => {
             </span>
           )}
         </div>
+
+        {/* Play button */}
+        {node.spotify_uri && onPlay && (
+          <button
+            onClick={() => onPlay(node)}
+            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm mb-4 transition-all hover:scale-105 active:scale-95"
+            style={{ backgroundColor: '#1DB954', color: 'white' }}
+          >
+            ▶ Play this song
+          </button>
+        )}
 
         <div className="space-y-6">
 
