@@ -1,4 +1,6 @@
-psycopg[binary]==3.2.4
-python-dotenv==1.0.1
-fastapi==0.115.6
-uvicorn==0.34.0
+psycopg[binary]
+python-dotenv
+fastapi
+uvicorn
+google-cloud-aiplatform
+vertexai

@@ -646,3 +646,5 @@ Your very first commit to the fresh repo should be:
 7. `pipeline/` — Empty directory with a README explaining what goes here
 
 This gives you a clean, working, properly structured repo from day one.
+
+uvicorn backend.main:app --reload
