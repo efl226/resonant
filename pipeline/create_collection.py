@@ -483,7 +483,7 @@ def main():
     collection_name = args.name
 
     # Read songs
-    with open(args.file) as f:
+    with open(args.file, encoding='utf-8') as f:
         queries = [line.strip() for line in f if line.strip() and not line.startswith('#')]
 
     print(f"{'='*60}")
