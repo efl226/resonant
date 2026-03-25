@@ -285,6 +285,8 @@ export default function App() {
           onRenderFramePre={(ctx, globalScale) => {
             const time = Date.now() / 3000;
 
+            if (Object.keys(clusterMeta).length === 0) return;
+
             const clusterGroups = {};
             graphData.nodes.forEach(node => {
               const cid = node.cluster_id;
