@@ -228,7 +228,7 @@ export default function App() {
   }, [clusters]);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', backgroundColor: '#050505', overflow: 'hidden', position: 'relative', fontFamily: 'sans-serif' }}>
+    <div style={{ width: '100dvw', height: '100dvh', backgroundColor: '#050505', overflow: 'hidden', position: 'relative', fontFamily: 'sans-serif' }}>
 
       <SearchBar 
         data={fullGraphData} 
