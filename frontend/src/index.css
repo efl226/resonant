@@ -18,6 +18,12 @@ body {
   overflow: hidden;
 }
 
+#root {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
 /* Custom Scrollbar for Sidebar */
 ::-webkit-scrollbar {
   width: 6px;
