@@ -160,16 +160,18 @@ def get_song(song_id: str):
 
 @app.get("/api/clusters")
 def get_clusters(collection: str = "default"):
-    try:
-        with open(f"pipeline/output/clusters_{collection}.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        pass
-    try:
-        with open("pipeline/output/clusters.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {"clusters": [], "unclustered_count": 0, "total_songs": 0}
+    conn = psycopg.connect(DATABASE_URL)
+    cur = conn.cursor()
+    cur.execute("SELECT data FROM clusters WHERE collection_id = %s", (collection,))
+    row = cur.fetchone()
+    if not row:
+        cur.execute("SELECT data FROM clusters WHERE collection_id = 'default'")
+        row = cur.fetchone()
+    cur.close()
+    conn.close()
+    if row:
+        return row[0]
+    return {"clusters": [], "unclustered_count": 0, "total_songs": 0}
 
 
 @app.get("/api/search")
