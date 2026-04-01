@@ -283,17 +283,19 @@ export default function App() {
           }}
 
           onRenderFramePre={(ctx, globalScale) => {
-            const time = Date.now() / 3000;
+            try {
+              const time = Date.now() / 3000;
+
+              const clusterGroups = {};
+              graphData.nodes.forEach(node => {
+                const cid = node.cluster_id;
+                if (cid === null || cid === undefined || cid === -1) return;
+                if (!clusterGroups[cid]) clusterGroups[cid] = [];
+                clusterGroups[cid].push(node);
+              });
 
             if (Object.keys(clusterMeta).length === 0) return;
 
-            const clusterGroups = {};
-            graphData.nodes.forEach(node => {
-              const cid = node.cluster_id;
-              if (cid === null || cid === undefined || cid === -1) return;
-              if (!clusterGroups[cid]) clusterGroups[cid] = [];
-              clusterGroups[cid].push(node);
-            });
 
             Object.entries(clusterGroups).forEach(([cid, nodes]) => {
               if (nodes.length < 2) return;
@@ -348,7 +350,11 @@ export default function App() {
                 ctx.fillText(label, cx, labelY);
               }
             });
-          }}
+          } catch (e) {
+            console.error("Error rendering cluster blobs:", e);
+          }
+          }
+      }
 
           nodeCanvasObject={(node, ctx, globalScale) => {
             const isModeActive = filteredNodeIds || selectedNode;
