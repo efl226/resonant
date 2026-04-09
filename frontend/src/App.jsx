@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import SearchBar from './components/SearchBar';
 import Sidebar from './components/Sidebar';
-import NeuralFilters from './components/NeuralFilters'; 
+import ConnectionControls from './components/Connectioncontrols';
 import TimelineView from './components/TimelineView';
 import PlayerBar from './components/PlayerBar';
 import { loadGraphData, loadClusterData } from './api/client';
@@ -50,6 +50,8 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState(null);
   const [searchActive, setSearchActive] = useState(false);
   const [playerNode, setPlayerNode] = useState(null);
+  const [activeConnectionTypes, setActiveConnectionTypes] = useState(new Set());
+
 
   useEffect(() => {
     Promise.all([loadGraphData(), loadClusterData()])
@@ -101,6 +103,12 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!selectedNode || !graphRef.current) return;
+      if (e.key === 'Escape') {
+      if (selectedNode) {
+          setSelectedNode(null);
+        }
+        return;
+      }
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
       e.preventDefault();
       const directions = {
@@ -162,7 +170,7 @@ export default function App() {
     setSearchActive(false);
     setSelectedNode(null);
     setActiveFilter(null);
-    if (graphRef.current) setTimeout(() => graphRef.current.zoomToFit(800), 100);
+    //THIS RESETS ZOOM: if (graphRef.current) setTimeout(() => graphRef.current.zoomToFit(800), 100);
   }, [fullGraphData, allClusters]);
 
   const filteredNodeIds = useMemo(() => {
@@ -181,23 +189,31 @@ export default function App() {
   }, [activeFilter, graphData]);
 
   const { highlightNodes, highlightLinks } = useMemo(() => {
-    const nodes = new Set();
-    const links = new Set();
-    if (filteredNodeIds) {
-      filteredNodeIds.forEach(id => nodes.add(id));
-    } else if (selectedNode) {
-      nodes.add(selectedNode.id);
-      graphData.links.forEach(link => {
-        const s = link.source.id || link.source;
-        const t = link.target.id || link.target;
-        if (s === selectedNode.id || t === selectedNode.id) {
-          links.add(link);
-          nodes.add(s === selectedNode.id ? t : s);
-        }
-      });
-    }
-    return { highlightNodes: nodes, highlightLinks: links };
-  }, [selectedNode, filteredNodeIds, graphData]);
+  const nodes = new Set();
+  const links = new Set();
+  if (filteredNodeIds) {
+    filteredNodeIds.forEach(id => nodes.add(id));
+  } else if (selectedNode) {
+    nodes.add(selectedNode.id);
+    graphData.links.forEach(link => {
+      const s = link.source.id || link.source;
+      const t = link.target.id || link.target;
+      if (s === selectedNode.id || t === selectedNode.id) {
+        links.add(link);
+        nodes.add(s === selectedNode.id ? t : s);
+      }
+    });
+  }
+  // Add globally toggled connection types
+  if (activeConnectionTypes.size > 0) {
+    graphData.links.forEach(link => {
+      if (activeConnectionTypes.has(link.type)) {
+        links.add(link);
+      }
+    });
+  }
+  return { highlightNodes: nodes, highlightLinks: links };
+}, [selectedNode, filteredNodeIds, graphData, activeConnectionTypes]);
 
   const handleNodeClick = useCallback((node) => {
     if (viewMode === 'graph' && graphRef.current) {
@@ -209,8 +225,24 @@ export default function App() {
 
   const handleBackgroundClick = useCallback(() => {
     setSelectedNode(null);
-    if (viewMode === 'graph' && graphRef.current) graphRef.current.zoomToFit(800);
+    //if (viewMode === 'graph' && graphRef.current) graphRef.current.zoomToFit(800);
   }, [viewMode]);
+
+  const handleToggleConnectionType = useCallback((type) => {
+  if (type === 'clear_all') {
+    setActiveConnectionTypes(new Set());
+    return;
+  }
+  setActiveConnectionTypes(prev => {
+    const next = new Set(prev);
+    if (next.has(type)) {
+      next.delete(type);
+    } else {
+      next.add(type);
+    }
+    return next;
+  });
+}, []);
 
   const hexToRgba = (hex, alpha) => {
     if (!hex || hex.length < 7) return `rgba(100, 100, 100, ${alpha})`;
@@ -242,6 +274,12 @@ export default function App() {
       <Sidebar 
         node={selectedNode} links={graphData.links} onClose={handleBackgroundClick}
         onPlay={setPlayerNode} onNavigate={handleNodeClick}
+      />
+
+      <ConnectionControls 
+        links={graphData.links}
+        activeTypes={activeConnectionTypes}
+        onToggleType={handleToggleConnectionType}
       />
 
       <PlayerBar node={playerNode} onClose={() => setPlayerNode(null)} />
