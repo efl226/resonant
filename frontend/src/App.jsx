@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar';
 import ConnectionControls from './components/Connectioncontrols';
 import TimelineView from './components/TimelineView';
 import PlayerBar from './components/PlayerBar';
+import ConnectionHint from './components/ConnectionHint';
 import { loadGraphData, loadClusterData } from './api/client';
 import FALLBACK_DATA from './data/songsseed.json';
 import './index.css';
@@ -51,6 +52,8 @@ export default function App() {
   const [searchActive, setSearchActive] = useState(false);
   const [playerNode, setPlayerNode] = useState(null);
   const [activeConnectionTypes, setActiveConnectionTypes] = useState(new Set());
+  const [hoveredLink, setHoveredLink] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
 
   useEffect(() => {
@@ -260,7 +263,9 @@ export default function App() {
   }, [clusters]);
 
   return (
-    <div style={{ width: '100dvw', height: '100dvh', backgroundColor: '#050505', overflow: 'hidden', position: 'relative', fontFamily: 'sans-serif' }}>
+    <div style={{ width: '100dvw', height: '100dvh', backgroundColor: '#050505', overflow: 'hidden', position: 'relative', fontFamily: 'sans-serif' }}
+    onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+    >
 
       <SearchBar 
         data={fullGraphData} 
@@ -280,6 +285,12 @@ export default function App() {
         links={graphData.links}
         activeTypes={activeConnectionTypes}
         onToggleType={handleToggleConnectionType}
+      />
+      <ConnectionHint 
+        link={hoveredLink} 
+        mousePos={mousePos} 
+        onNavigate={handleNodeClick}
+        linkTypeConfig={linkTypeColors}
       />
 
       <PlayerBar node={playerNode} onClose={() => setPlayerNode(null)} />
@@ -304,11 +315,32 @@ export default function App() {
             }
             return 'rgba(0,0,0,0)';
           }}
-          linkWidth={link => highlightLinks.has(link) ? 2.5 : 0}
+          linkWidth={link => {
+            if (hoveredLink === link) return 5;
+            if (highlightLinks.has(link)) return 2.5;
+            return 0;
+          }}
           linkDirectionalParticles={link => highlightLinks.has(link) ? 3 : 0}
           linkDirectionalParticleSpeed={0.005}
           linkDirectionalParticleColor={link => linkTypeColors[link.type] || '#fff'}
           linkLabel={() => ''}
+          onLinkHover={(link) => {
+            if (link && highlightLinks.has(link)) {
+              const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+              link._otherNode = sourceId === selectedNode?.id ? link.target : link.source;
+              setHoveredLink(link);
+            } else {
+              setHoveredLink(null);
+            }
+          }}
+          onLinkClick={(link) => {
+            if (!highlightLinks.has(link)) return;
+            const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+            const otherNode = sourceId === selectedNode?.id ? link.target : link.source;
+            if (typeof otherNode === 'object') {
+              handleNodeClick(otherNode);
+            }
+          }}
 
           onNodeClick={handleNodeClick}
           onNodeHover={(node) => setHoveredNode(node)}
