@@ -420,6 +420,98 @@ export default function App() {
             });
           }}
 
+          onRenderFramePost={(ctx, globalScale) => {
+            // Draw labels ON TOP of everything for hovered/selected nodes
+            const nodesToLabel = [];
+            if (selectedNode) {
+              const sel = graphData.nodes.find(n => n.id === selectedNode.id);
+              if (sel) nodesToLabel.push(sel);
+            }
+            if (hoveredNode && hoveredNode.id !== selectedNode?.id) {
+              nodesToLabel.push(hoveredNode);
+            }
+
+            nodesToLabel.forEach(node => {
+              if (node.x === undefined || node.y === undefined) return;
+              
+              const label = node.name || '';
+              const artistLabel = node.artist || '';
+              const fontSize = 13 / globalScale;
+              const smallFontSize = 9 / globalScale;
+              const padding = 8 / globalScale;
+              const nodeSize = 20;
+
+              ctx.font = `600 ${fontSize}px Inter, sans-serif`;
+              const textWidth = ctx.measureText(label).width;
+              ctx.font = `400 ${smallFontSize}px Inter, sans-serif`;
+              const artistWidth = ctx.measureText(artistLabel).width;
+
+              const bgWidth = Math.max(textWidth, artistWidth) + padding * 2;
+              const bgHeight = fontSize + smallFontSize + padding * 2 + 2;
+
+              // Position ABOVE the node
+              const bgX = node.x - bgWidth / 2;
+              const bgY = node.y - nodeSize / 2 - bgHeight - 8 / globalScale;
+
+              // Drop shadow
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+              ctx.shadowBlur = 12 / globalScale;
+              ctx.shadowOffsetY = 2 / globalScale;
+
+              // Background with rounded corners
+              ctx.fillStyle = 'rgba(10, 10, 10, 0.96)';
+              ctx.beginPath();
+              const radius = 4 / globalScale;
+              if (ctx.roundRect) {
+                ctx.roundRect(bgX, bgY, bgWidth, bgHeight, radius);
+              } else {
+                ctx.rect(bgX, bgY, bgWidth, bgHeight);
+              }
+              ctx.fill();
+
+              // Reset shadow for border and text
+              ctx.shadowColor = 'transparent';
+              ctx.shadowBlur = 0;
+              ctx.shadowOffsetY = 0;
+
+              // Accent border using album color
+              const accentColor = node.visual_dna?.primary_color || '#ffffff';
+              ctx.strokeStyle = accentColor;
+              ctx.lineWidth = 1.5 / globalScale;
+              ctx.beginPath();
+              if (ctx.roundRect) {
+                ctx.roundRect(bgX, bgY, bgWidth, bgHeight, radius);
+              } else {
+                ctx.rect(bgX, bgY, bgWidth, bgHeight);
+              }
+              ctx.stroke();
+
+              // Small arrow pointing down to the node
+              const arrowX = node.x;
+              const arrowY = bgY + bgHeight;
+              const arrowSize = 4 / globalScale;
+              ctx.fillStyle = 'rgba(10, 10, 10, 0.96)';
+              ctx.beginPath();
+              ctx.moveTo(arrowX - arrowSize, arrowY);
+              ctx.lineTo(arrowX + arrowSize, arrowY);
+              ctx.lineTo(arrowX, arrowY + arrowSize);
+              ctx.closePath();
+              ctx.fill();
+
+              // Song name
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'top';
+              ctx.font = `600 ${fontSize}px Inter, sans-serif`;
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
+              ctx.fillText(label, node.x, bgY + padding);
+
+              // Artist name
+              ctx.font = `400 ${smallFontSize}px Inter, sans-serif`;
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+              ctx.fillText(artistLabel, node.x, bgY + padding + fontSize + 2 / globalScale);
+            });
+          }}
+
           nodeCanvasObject={(node, ctx, globalScale) => {
             const isModeActive = filteredNodeIds || selectedNode;
             const isHighlighted = isModeActive ? (highlightNodes.has(node.id)) : true;
@@ -458,30 +550,7 @@ export default function App() {
               ctx.stroke();
             }
 
-            const isHovered = hoveredNode?.id === node.id;
-            const showLabel = isSelected || isHovered;
-
-            if (showLabel && isHighlighted) {
-              const label = node.name;
-              const artistLabel = node.artist;
-              const fontSize = 14 / globalScale;
-              const smallFontSize = 10 / globalScale;
-              ctx.font = `600 ${fontSize}px Inter, sans-serif`;
-              ctx.textAlign = 'center';
-              const textWidth = ctx.measureText(label).width;
-              const artistWidth = ctx.measureText(artistLabel).width;
-              const bgWidth = Math.max(textWidth, artistWidth) + 8;
-
-              ctx.fillStyle = 'rgba(0,0,0,0.8)';
-              ctx.fillRect(node.x - bgWidth / 2, node.y + size / 2 + 2, bgWidth, fontSize + smallFontSize + 8);
-
-              ctx.fillStyle = 'rgba(255,255,255,0.95)';
-              ctx.fillText(label, node.x, node.y + size / 2 + fontSize + 4);
-
-              ctx.font = `400 ${smallFontSize}px Inter, sans-serif`;
-              ctx.fillStyle = 'rgba(255,255,255,0.5)';
-              ctx.fillText(artistLabel, node.x, node.y + size / 2 + fontSize + smallFontSize + 6);
-            }
+            
 
             ctx.globalAlpha = 1;
           }}
