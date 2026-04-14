@@ -354,7 +354,7 @@ const SearchBar = ({ data, onSelect, onSearchResults, onReset, searchActive }) =
   }
 
   return (
-    <div id="search-container" className="absolute top-5 left-5 z-10 w-[420px]">
+    <div id="search-container" className="top-5 left-5 z-10 w-[420px]">
       {/* Search input + reset */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
@@ -366,7 +366,7 @@ const SearchBar = ({ data, onSelect, onSearchResults, onReset, searchActive }) =
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onFocus={() => results.length > 0 && setShowResults(true)}
-            className="w-full bg-black/80 border border-white/10 text-white px-5 py-3 rounded-full backdrop-blur-md outline-none focus:border-white/30 shadow-2xl transition-all text-sm"
+            className="w-full bg-white/[0.06] border border-white/10 text-white px-5 py-3 rounded-full backdrop-blur-md outline-none focus:border-white/30 shadow-2xl transition-all text-sm"
             style={isFiltered ? { borderColor: 'rgba(74, 158, 232, 0.4)' } : {}}
           />
           {loading && (

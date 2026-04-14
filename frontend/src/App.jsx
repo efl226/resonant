@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar';
 import ConnectionControls from './components/Connectioncontrols';
 import TimelineView from './components/TimelineView';
 import PlayerBar from './components/PlayerBar';
+import DiscoverPanel from './components/DiscoverPanel';
 import ConnectionHint from './components/ConnectionHint';
 import { loadGraphData, loadClusterData } from './api/client';
 import FALLBACK_DATA from './data/songsseed.json';
@@ -167,6 +168,8 @@ export default function App() {
     if (graphRef.current) setTimeout(() => graphRef.current.zoomToFit(800, 50), 300);
   }, [fullGraphData, allClusters]);
 
+  
+  
   const handleReset = useCallback(() => {
     setGraphData(fullGraphData);
     setClusters(allClusters);
@@ -226,6 +229,13 @@ export default function App() {
     setSelectedNode(node);
   }, [viewMode]);
 
+  const handleDecadeFilter = useCallback((filter) => {
+  // Fire the same filter event the sidebar uses
+  window.dispatchEvent(new CustomEvent('resonant-add-filter', {
+    detail: { key: filter.type, value: filter.value }
+  }));
+  }, []);
+
   const handleBackgroundClick = useCallback(() => {
     setSelectedNode(null);
     //if (viewMode === 'graph' && graphRef.current) graphRef.current.zoomToFit(800);
@@ -267,13 +277,24 @@ export default function App() {
     onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
     >
 
-      <SearchBar 
-        data={fullGraphData} 
-        onSelect={handleNodeClick} 
-        onSearchResults={handleSearchResults}
-        onReset={handleReset}
-        searchActive={searchActive}
-      />
+      <div className="fixed top-4 left-4 right-4 z-20 flex items-start gap-4 pointer-events-none">
+        <div className="pointer-events-auto">
+          <DiscoverPanel 
+            graphData={fullGraphData}
+            onNavigate={handleNodeClick}
+            onFilter={handleDecadeFilter}
+          />
+        </div>
+        <div className="pointer-events-auto flex-1 max-w-2xl">
+          <SearchBar 
+            data={fullGraphData} 
+            onSelect={handleNodeClick} 
+            onSearchResults={handleSearchResults}
+            onReset={handleReset}
+            searchActive={searchActive}
+          />
+        </div>
+      </div>
       
 
       <Sidebar 
