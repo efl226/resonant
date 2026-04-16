@@ -181,11 +181,11 @@ def search_songs(q: str = "", limit: int = 20):
 
 
 @app.post("/api/filter-direct")
-def filter_direct(filters: dict):
+def filter_direct(filters: dict, collection: str = "default"):
     conn = psycopg.connect(DATABASE_URL)
     cur = conn.cursor()
-    conditions = []
-    params = []
+    conditions = ["collection_id = %s"]
+    params = [collection]
     if filters.get("artist"):
         conditions.append("artist ILIKE %s")
         params.append(f"%{filters['artist']}%")
@@ -237,16 +237,30 @@ def filter_direct(filters: dict):
         for t in filters["themes"]:
             conditions.append("EXISTS (SELECT 1 FROM unnest(themes) AS th WHERE th ILIKE %s)")
             params.append(f"%{t}%")
+    if filters.get("songwriter"):
+        conditions.append("EXISTS (SELECT 1 FROM unnest(songwriter) AS sw WHERE sw ILIKE %s)")
+        params.append(f"%{filters['songwriter']}%")
+    if filters.get("studio"):
+        conditions.append("studio ILIKE %s")
+        params.append(f"%{filters['studio']}%")
+    if filters.get("mixing_engineer"):
+        conditions.append("mixing_engineer ILIKE %s")
+        params.append(f"%{filters['mixing_engineer']}%")
     if filters.get("decade"):
         decade_map = {
-            "60s": (1960, 1969), "70s": (1970, 1979), "80s": (1980, 1989),
-            "90s": (1990, 1999), "00s": (2000, 2009), "10s": (2010, 2019), "20s": (2020, 2029),
+            "60s": (1960, 1969), "1960s": (1960, 1969),
+            "70s": (1970, 1979), "1970s": (1970, 1979),
+            "80s": (1980, 1989), "1980s": (1980, 1989),
+            "90s": (1990, 1999), "1990s": (1990, 1999),
+            "00s": (2000, 2009), "2000s": (2000, 2009),
+            "10s": (2010, 2019), "2010s": (2010, 2019),
+            "20s": (2020, 2029), "2020s": (2020, 2029),
         }
         if filters["decade"] in decade_map:
             y_min, y_max = decade_map[filters["decade"]]
             conditions.append("year >= %s AND year <= %s")
             params.extend([y_min, y_max])
-    if not conditions:
+    if len(conditions) <= 1:
         cur.close()
         conn.close()
         return {"results": [], "total": 0}

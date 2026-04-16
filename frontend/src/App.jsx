@@ -2,11 +2,11 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import SearchBar from './components/SearchBar';
 import Sidebar from './components/Sidebar';
-import ConnectionControls from './components/Connectioncontrols';
 import TimelineView from './components/TimelineView';
 import PlayerBar from './components/PlayerBar';
 import DiscoverPanel from './components/DiscoverPanel';
 import ConnectionHint from './components/ConnectionHint';
+import ExplorePanel, { computeMatches, getSharedAttributes } from './components/ExplorePanel';
 import { loadGraphData, loadClusterData } from './api/client';
 import FALLBACK_DATA from './data/songsseed.json';
 import './index.css';
@@ -38,6 +38,76 @@ const linkTypeColors = {
   same_feel: '#8B9FE8',
 };
 
+// Full config for ALL link types (DB links + virtual filter links)
+// Used by ConnectionHint for label/color/icon
+const LINK_TYPE_CONFIG = {
+  // Real DB link types
+  samples:            { label: 'Samples',           color: '#E8724A', icon: '⟲' },
+  shared_musician:    { label: 'Shared Musician',   color: '#6BCB77', icon: '♫' },
+  same_producer:      { label: 'Same Producer',     color: '#B84AE8', icon: '◉' },
+  same_songwriter:    { label: 'Same Songwriter',   color: '#D44AE8', icon: '✎' },
+  same_label:         { label: 'Same Label',        color: '#8B9FE8', icon: '◎' },
+  same_studio:        { label: 'Same Studio',       color: '#9B72CF', icon: '⌂' },
+  shared_instruments: { label: 'Shared Instruments',color: '#4AE8D4', icon: '◈' },
+  harmonic_bridge:    { label: 'Harmonic Bridge',   color: '#E8C94A', icon: '♪' },
+  // Virtual filter link types
+  nearby_adjacent:    { label: 'Adjacent Song',     color: 'rgba(200,210,255,0.9)', icon: '◎' },
+  cluster:            { label: 'Same Cluster',      color: '#8B9FE8', icon: '◈' },
+  mood:               { label: 'Shares Mood',       color: '#E84A6A', icon: '♥' },
+  theme:              { label: 'Shares Theme',      color: '#E8C94A', icon: '#' },
+  instrument:         { label: 'Shares Instrument', color: '#4AE8D4', icon: '◈' },
+  decade:             { label: 'Same Decade',       color: '#4A9EE8', icon: '◷' },
+  key:                { label: 'Same Key',          color: '#4A9EE8', icon: '♩' },
+  mode:               { label: 'Same Mode',         color: '#4A9EE8', icon: '♩' },
+  bpm:                { label: 'Similar BPM',       color: '#4A9EE8', icon: '♩' },
+  time_signature:     { label: 'Same Time Sig',     color: '#4A9EE8', icon: '♩' },
+  vocal_type:         { label: 'Same Vocal Type',   color: '#4A9EE8', icon: '♩' },
+  rhythm_feel:        { label: 'Same Rhythm Feel',  color: '#4A9EE8', icon: '♩' },
+  label:              { label: 'Same Label',        color: '#B84AE8', icon: '◎' },
+  studio:             { label: 'Same Studio',       color: '#B84AE8', icon: '⌂' },
+  producer:           { label: 'Same Producer',     color: '#B84AE8', icon: '◉' },
+  songwriter:         { label: 'Same Songwriter',   color: '#B84AE8', icon: '✎' },
+  mixing_engineer:    { label: 'Same Mix Engineer', color: '#B84AE8', icon: '◈' },
+  artist:             { label: 'Same Artist',       color: '#4A9EE8', icon: '◎' },
+};
+
+// Color-only map for ForceGraph2D link props (extracted from LINK_TYPE_CONFIG)
+const FILTER_TYPE_COLORS = Object.fromEntries(
+  Object.entries(LINK_TYPE_CONFIG).map(([k, v]) => [k, v.color])
+);
+
+function distToSegment(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len2 = dx * dx + dy * dy;
+  if (len2 === 0) return Math.hypot(px - x1, py - y1);
+  const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / len2));
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+}
+
+function getVirtualLinkReason(filter) {
+  switch (filter.type) {
+    case 'nearby_adjacent': return 'Adjacent songs in the music map';
+    case 'cluster':         return 'Same cluster';
+    case 'mood':            return `Shares mood: ${filter.value}`;
+    case 'theme':           return `Shares theme: ${filter.value}`;
+    case 'instrument':      return `Shares instrument: ${filter.value}`;
+    case 'decade':          return `Both from the ${filter.value}`;
+    case 'key':             return `Both in ${filter.value}`;
+    case 'mode':            return `Both ${filter.value} mode`;
+    case 'bpm':             return `Similar tempo (~${filter.value} BPM ±5)`;
+    case 'time_signature':  return `Both in ${filter.value} time`;
+    case 'vocal_type':      return `Both have ${filter.value} vocals`;
+    case 'rhythm_feel':     return `Shares ${filter.value} rhythm`;
+    case 'label':           return `Both on ${filter.value}`;
+    case 'studio':          return `Both recorded at ${filter.value}`;
+    case 'producer':        return `Both produced by ${filter.value}`;
+    case 'songwriter':      return `Both written by ${filter.value}`;
+    case 'mixing_engineer': return `Both mixed by ${filter.value}`;
+    case 'artist':          return `Same artist: ${filter.value}`;
+    default:                return '';
+  }
+}
+
 export default function App() {
   const graphRef = useRef();
   
@@ -52,9 +122,13 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState(null);
   const [searchActive, setSearchActive] = useState(false);
   const [playerNode, setPlayerNode] = useState(null);
-  const [activeConnectionTypes, setActiveConnectionTypes] = useState(new Set());
   const [hoveredLink, setHoveredLink] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [activeFilters, setActiveFilters] = useState(new Map());
+  const [combineMode, setCombineMode] = useState('intersection');
+  const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [hoveredVirtualLink, setHoveredVirtualLink] = useState(null);
+  const [activeTab, setActiveTab] = useState('adjacent');
 
 
   useEffect(() => {
@@ -103,6 +177,27 @@ export default function App() {
     fg.d3Force('center', null);
     fg.d3ReheatSimulation();
   }, [loading, graphData]);
+
+  // Keep canvas sized to window
+  useEffect(() => {
+    const onResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Add/remove adjacent highlight whenever the selected node or active tab changes
+  useEffect(() => {
+    if (!selectedNode) return;
+    setActiveFilters(prev => {
+      const next = new Map(prev);
+      if (activeTab === 'adjacent') {
+        next.set('nearby:adjacent', { type: 'nearby_adjacent' });
+      } else {
+        next.delete('nearby:adjacent');
+      }
+      return next;
+    });
+  }, [selectedNode?.id, activeTab]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -194,32 +289,105 @@ export default function App() {
       .map(n => n.id);
   }, [activeFilter, graphData]);
 
-  const { highlightNodes, highlightLinks } = useMemo(() => {
-  const nodes = new Set();
-  const links = new Set();
-  if (filteredNodeIds) {
-    filteredNodeIds.forEach(id => nodes.add(id));
-  } else if (selectedNode) {
-    nodes.add(selectedNode.id);
-    graphData.links.forEach(link => {
-      const s = link.source.id || link.source;
-      const t = link.target.id || link.target;
-      if (s === selectedNode.id || t === selectedNode.id) {
-        links.add(link);
-        nodes.add(s === selectedNode.id ? t : s);
-      }
+  const handleToggleFilter = useCallback((key, filter) => {
+    setActiveFilters(prev => {
+      const next = new Map(prev);
+      if (next.has(key)) next.delete(key);
+      else next.set(key, filter);
+      return next;
     });
-  }
-  // Add globally toggled connection types
-  if (activeConnectionTypes.size > 0) {
-    graphData.links.forEach(link => {
-      if (activeConnectionTypes.has(link.type)) {
-        links.add(link);
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setActiveFilters(new Map());
+  }, []);
+
+  const handleToggleCombineMode = useCallback(() => {
+    setCombineMode(prev => prev === 'intersection' ? 'union' : 'intersection');
+  }, []);
+
+  const { highlightNodes, highlightLinks, filterMatchSets } = useMemo(() => {
+    const nodes = new Set();
+    const links = new Set();
+    const matchSets = new Map(); // filterKey -> Set<nodeId>
+
+    if (filteredNodeIds) {
+      filteredNodeIds.forEach(id => nodes.add(id));
+    } else if (selectedNode) {
+      nodes.add(selectedNode.id);
+
+      // Compute matches from active filters
+      if (activeFilters.size > 0) {
+        const filterEntries = [...activeFilters.entries()];
+        const perFilterSets = filterEntries.map(([key, filter]) => {
+          const s = computeMatches(filter, selectedNode, graphData.nodes, graphData.links);
+          matchSets.set(key, s);
+
+          // For 'connection' filters, also add the actual DB link objects to highlightLinks
+          if (filter.type === 'connection') {
+            graphData.links.forEach(link => {
+              if (link.type !== filter.value) return;
+              const sId = typeof link.source === 'object' ? link.source.id : link.source;
+              const tId = typeof link.target === 'object' ? link.target.id : link.target;
+              if (sId === selectedNode.id || tId === selectedNode.id) links.add(link);
+            });
+          }
+
+          return s;
+        });
+        let resultIds;
+        if (combineMode === 'intersection') {
+          resultIds = perFilterSets.reduce((acc, s) => {
+            if (!acc) return new Set(s);
+            return new Set([...acc].filter(id => s.has(id)));
+          }, null) || new Set();
+        } else {
+          resultIds = new Set();
+          perFilterSets.forEach(s => s.forEach(id => resultIds.add(id)));
+        }
+        resultIds.forEach(id => nodes.add(id));
       }
+    }
+
+    return { highlightNodes: nodes, highlightLinks: links, filterMatchSets: matchSets };
+  }, [selectedNode, filteredNodeIds, graphData, activeFilters, combineMode]);
+
+  // Virtual links: canvas-drawn connections for non-'connection' filters
+  // One entry per matched node, carrying reason + color for ConnectionHint
+  const virtualLinks = useMemo(() => {
+    if (!selectedNode || filterMatchSets.size === 0) return [];
+    const vlinks = [];
+    graphData.nodes.forEach(node => {
+      if (!highlightNodes.has(node.id) || node.id === selectedNode.id) return;
+      // Collect which non-connection filters matched this node
+      const matchingFilters = [];
+      for (const [key, filter] of activeFilters.entries()) {
+        if (filter.type === 'connection') continue;
+        if (filterMatchSets.get(key)?.has(node.id)) matchingFilters.push({ key, filter });
+      }
+      if (matchingFilters.length === 0) return;
+      // Use first filter for color/type; combine all reasons
+      const primaryFilter = matchingFilters[0].filter;
+      let reason;
+      if (primaryFilter.type === 'nearby_adjacent') {
+        const shared = getSharedAttributes(selectedNode, node);
+        reason = shared.length > 0
+          ? `Shares: ${shared.map(a => a.label).join(', ')}`
+          : 'Adjacent songs in the music map';
+      } else {
+        const reasons = matchingFilters.map(({ filter }) => getVirtualLinkReason(filter)).filter(Boolean);
+        reason = reasons.join(' · ');
+      }
+      vlinks.push({
+        _virtual: true,
+        _otherNode: node,
+        type: primaryFilter.type,
+        reason,
+        color: LINK_TYPE_CONFIG[primaryFilter.type]?.color || 'rgba(255,255,255,0.4)',
+      });
     });
-  }
-  return { highlightNodes: nodes, highlightLinks: links };
-}, [selectedNode, filteredNodeIds, graphData, activeConnectionTypes]);
+    return vlinks;
+  }, [selectedNode, activeFilters, filterMatchSets, highlightNodes, graphData.nodes]);
 
   const handleNodeClick = useCallback((node) => {
     if (viewMode === 'graph' && graphRef.current) {
@@ -237,25 +405,15 @@ export default function App() {
   }, []);
 
   const handleBackgroundClick = useCallback(() => {
-    setSelectedNode(null);
-    //if (viewMode === 'graph' && graphRef.current) graphRef.current.zoomToFit(800);
-  }, [viewMode]);
-
-  const handleToggleConnectionType = useCallback((type) => {
-  if (type === 'clear_all') {
-    setActiveConnectionTypes(new Set());
-    return;
-  }
-  setActiveConnectionTypes(prev => {
-    const next = new Set(prev);
-    if (next.has(type)) {
-      next.delete(type);
-    } else {
-      next.add(type);
+    if (hoveredVirtualLink) {
+      handleNodeClick(hoveredVirtualLink._otherNode);
+      return;
     }
-    return next;
-  });
-}, []);
+    setSelectedNode(null);
+  }, [hoveredVirtualLink, handleNodeClick]);
+
+  
+  
 
   const hexToRgba = (hex, alpha) => {
     if (!hex || hex.length < 7) return `rgba(100, 100, 100, ${alpha})`;
@@ -274,7 +432,30 @@ export default function App() {
 
   return (
     <div style={{ width: '100dvw', height: '100dvh', backgroundColor: '#050505', overflow: 'hidden', position: 'relative', fontFamily: 'sans-serif' }}
-    onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+    onMouseMove={(e) => {
+      const pos = { x: e.clientX, y: e.clientY };
+      setMousePos(pos);
+      // Virtual link hover detection (screen-space line hit test)
+      if (selectedNode && virtualLinks.length > 0 && graphRef.current) {
+        const sel = graphData.nodes.find(n => n.id === selectedNode.id);
+        if (sel?.x !== undefined) {
+          const selScreen = graphRef.current.graph2ScreenCoords(sel.x, sel.y);
+          let found = null;
+          for (const vlink of virtualLinks) {
+            const tgt = vlink._otherNode;
+            if (tgt?.x === undefined) continue;
+            const tScreen = graphRef.current.graph2ScreenCoords(tgt.x, tgt.y);
+            if (distToSegment(pos.x, pos.y, selScreen.x, selScreen.y, tScreen.x, tScreen.y) < 7) {
+              found = vlink;
+              break;
+            }
+          }
+          setHoveredVirtualLink(found);
+        }
+      } else if (hoveredVirtualLink) {
+        setHoveredVirtualLink(null);
+      }
+    }}
     >
 
       <div className="fixed top-4 left-4 right-4 z-20 flex items-start gap-4 pointer-events-none">
@@ -297,21 +478,35 @@ export default function App() {
       </div>
       
 
-      <Sidebar 
-        node={selectedNode} links={graphData.links} onClose={handleBackgroundClick}
-        onPlay={setPlayerNode} onNavigate={handleNodeClick}
+      <Sidebar
+        node={selectedNode}
+        links={graphData.links}
+        onClose={handleBackgroundClick}
+        onPlay={setPlayerNode}
+        onNavigate={handleNodeClick}
       />
 
-      <ConnectionControls 
-        links={graphData.links}
-        activeTypes={activeConnectionTypes}
-        onToggleType={handleToggleConnectionType}
-      />
-      <ConnectionHint 
-        link={hoveredLink} 
-        mousePos={mousePos} 
+      <ExplorePanel
+        selectedNode={selectedNode}
+        allNodes={graphData.nodes}
+        allLinks={graphData.links}
+        clusters={allClusters}
+        activeFilters={activeFilters}
+        onToggleFilter={handleToggleFilter}
+        onClearFilters={handleClearFilters}
+        combineMode={combineMode}
+        onToggleCombineMode={handleToggleCombineMode}
         onNavigate={handleNodeClick}
-        linkTypeConfig={linkTypeColors}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
+
+      
+      <ConnectionHint
+        link={hoveredLink || hoveredVirtualLink}
+        mousePos={mousePos}
+        onNavigate={handleNodeClick}
+        linkTypeConfig={LINK_TYPE_CONFIG}
       />
 
       <PlayerBar node={playerNode} onClose={() => setPlayerNode(null)} />
@@ -322,6 +517,8 @@ export default function App() {
         <ForceGraph2D
           ref={graphRef}
           graphData={graphData}
+          width={windowSize.width}
+          height={windowSize.height}
           backgroundColor="#050505"
           nodeRelSize={12}
           nodeLabel={() => ''}
@@ -450,6 +647,35 @@ export default function App() {
             }
             if (hoveredNode && hoveredNode.id !== selectedNode?.id) {
               nodesToLabel.push(hoveredNode);
+            }
+            // Draw virtual filter links — endpoints trimmed to node circle edges
+            if (virtualLinks.length > 0) {
+              const sel = graphData.nodes.find(n => n.id === selectedNode?.id);
+              if (sel?.x !== undefined) {
+                // Selected node is drawn at size=30 (r=15) + 1px ring = 16
+                // Regular nodes are drawn at size=20 (r=10) + 1px ring = 11
+                const SEL_R = 16;
+                const TGT_R = 11;
+                virtualLinks.forEach(vlink => {
+                  const tgt = vlink._otherNode;
+                  if (!tgt || tgt.x === undefined) return;
+                  const dx = tgt.x - sel.x;
+                  const dy = tgt.y - sel.y;
+                  const len = Math.sqrt(dx * dx + dy * dy);
+                  if (len < SEL_R + TGT_R) return; // circles overlap, nothing to draw
+                  const nx = dx / len;
+                  const ny = dy / len;
+                  const isHovered = hoveredVirtualLink === vlink;
+                  ctx.strokeStyle = vlink.color;
+                  ctx.globalAlpha = isHovered ? 0.85 : 0.45;
+                  ctx.lineWidth = (isHovered ? 3.5 : 2.5) / globalScale;
+                  ctx.beginPath();
+                  ctx.moveTo(sel.x + nx * SEL_R, sel.y + ny * SEL_R);
+                  ctx.lineTo(tgt.x - nx * TGT_R, tgt.y - ny * TGT_R);
+                  ctx.stroke();
+                  ctx.globalAlpha = 1;
+                });
+              }
             }
 
             nodesToLabel.forEach(node => {

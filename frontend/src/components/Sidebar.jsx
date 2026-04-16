@@ -71,25 +71,14 @@ const FilterPill = ({ value, filterKey, accentRgb }) => {
 
 const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
   const [showLyrics, setShowLyrics] = useState(false);
-  const [activeConnectionType, setActiveConnectionType] = useState('all');
 
   if (!node) return null;
 
   const accent = node.visual_dna?.primary_color || '#ffffff';
   const accentRgb = hexToRgb(accent);
+  const [ar, ag, ab] = accentRgb.split(',').map(Number);
+  const brightness = (ar * 299 + ag * 587 + ab * 114) / 1000;
   const palette = node.visual_dna?.palette || [];
-
-  const nodeLinks = (links || []).filter(link => {
-    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
-    return sourceId === node.id || targetId === node.id;
-  });
-
-  const filteredLinks = activeConnectionType === 'all' 
-    ? nodeLinks 
-    : nodeLinks.filter(l => l.type === activeConnectionType);
-
-  const linkTypes = [...new Set(nodeLinks.map(l => l.type))];
 
   const musicianCredits = node.genetic_dna?.musician_credits || {};
   const samplesFrom = node.genetic_dna?.samples_from || [];
@@ -503,108 +492,6 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             </section>
           )}
 
-          {/* CONNECTIONS */}
-          <section>
-            <h3 
-              className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3"
-              style={{ color: `rgba(${accentRgb}, 0.4)` }}
-            >
-              Connections ({nodeLinks.length})
-            </h3>
-            
-            {linkTypes.length > 1 && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                <button
-                  onClick={() => setActiveConnectionType('all')}
-                  className="px-2 py-0.5 rounded text-[10px] transition-all"
-                  style={{
-                    backgroundColor: activeConnectionType === 'all' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)',
-                    color: activeConnectionType === 'all' ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)',
-                  }}
-                >
-                  All
-                </button>
-                {linkTypes.map(type => {
-                  const config = linkTypeConfig[type] || { label: type, color: '#888' };
-                  const isActive = activeConnectionType === type;
-                  return (
-                    <button
-                      key={type}
-                      onClick={() => setActiveConnectionType(isActive ? 'all' : type)}
-                      className="px-2 py-0.5 rounded text-[10px] transition-all"
-                      style={{
-                        backgroundColor: isActive ? `${config.color}22` : 'rgba(255,255,255,0.04)',
-                        color: isActive ? config.color : 'rgba(255,255,255,0.3)',
-                        border: isActive ? `1px solid ${config.color}44` : '1px solid transparent',
-                      }}
-                    >
-                      {config.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="flex flex-col gap-2">
-              {filteredLinks.map((link, i) => {
-                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-                const isSource = sourceId === node.id;
-                const otherNode = isSource ? link.target : link.source;
-                const otherName = typeof otherNode === 'object' ? otherNode.name : `Song ${otherNode}`;
-                const otherArtist = typeof otherNode === 'object' ? otherNode.artist : '';
-                const otherImg = typeof otherNode === 'object' ? otherNode.img : null;
-                
-                const config = linkTypeConfig[link.type] || { label: link.type, color: '#888', icon: '·' };
-
-                return (
-                  <div 
-                    key={i} 
-                    className="p-3 rounded-lg transition-all duration-200 cursor-pointer"
-                    onClick={() => {
-                      if (onNavigate && typeof otherNode === 'object') {
-                        onNavigate(otherNode);
-                      }
-                    }}
-                    style={{
-                      backgroundColor: `${config.color}08`,
-                      border: `1px solid ${config.color}15`,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = `${config.color}18`;
-                      e.currentTarget.style.borderColor = `${config.color}30`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = `${config.color}08`;
-                      e.currentTarget.style.borderColor = `${config.color}15`;
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      {otherImg && (
-                        <img src={otherImg} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-white/85 truncate">{otherName}</div>
-                        {otherArtist && <div className="text-[11px] text-white/35 truncate">{otherArtist}</div>}
-                      </div>
-                    </div>
-                    {link.reason && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-                          style={{ backgroundColor: `${config.color}20`, color: config.color }}
-                        >
-                          {config.icon} {config.label}
-                        </span>
-                        <span className="text-[11px] text-white/35 leading-relaxed">{link.reason}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {nodeLinks.length === 0 && (
-                <div className="text-white/20 text-xs italic py-4">No connections found.</div>
-              )}
-            </div>
-          </section>
 
         </div>
       </div>

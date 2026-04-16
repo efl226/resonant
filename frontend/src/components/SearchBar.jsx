@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { getCollection } from '../api/client';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -121,7 +122,7 @@ const SearchBar = ({ data, onSelect, onSearchResults, onReset, searchActive }) =
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/filter-direct`, {
+      const response = await fetch(`${API_BASE}/api/filter-direct?collection=${getCollection()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(filters),
