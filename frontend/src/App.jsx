@@ -696,8 +696,6 @@ export default function App() {
           }}
 
           onRenderFramePre={(ctx, globalScale) => {
-            const time = Date.now() / 3000;
-
             if (Object.keys(clusterMeta).length === 0) return;
 
             const clusterGroups = {};
@@ -712,7 +710,7 @@ export default function App() {
               if (nodes.length < 2) return;
 
               const meta = clusterMeta[parseInt(cid)] || {};
-              const color = meta.color || '#666';
+              const color = meta.color || '#888888';
               const label = meta.label || '';
 
               let cx = 0, cy = 0;
@@ -725,40 +723,67 @@ export default function App() {
                 const d = Math.sqrt((n.x - cx) ** 2 + (n.y - cy) ** 2);
                 if (d > maxDist) maxDist = d;
               });
-              const radius = maxDist + 40;
+              const radius = maxDist + 48;
 
-              const drawBlob = (bx, by, br, opacity) => {
-                const gradient = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-                gradient.addColorStop(0, hexToRgba(color, opacity));
-                gradient.addColorStop(0.5, hexToRgba(color, opacity * 0.5));
-                gradient.addColorStop(1, hexToRgba(color, 0));
-                ctx.beginPath();
-                ctx.arc(bx, by, br, 0, 2 * Math.PI);
-                ctx.fillStyle = gradient;
-                ctx.fill();
-              };
+              // Soft radial fill — concentrated at center, fading out
+              const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+              gradient.addColorStop(0,   hexToRgba(color, 0.10));
+              gradient.addColorStop(0.55, hexToRgba(color, 0.05));
+              gradient.addColorStop(1,   hexToRgba(color, 0));
+              ctx.beginPath();
+              ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+              ctx.fillStyle = gradient;
+              ctx.fill();
 
-              drawBlob(cx, cy, radius, 0.08);
+              // Dashed outer boundary ring
+              ctx.save();
+              ctx.beginPath();
+              ctx.arc(cx, cy, radius - 4, 0, 2 * Math.PI);
+              ctx.strokeStyle = hexToRgba(color, 0.18);
+              ctx.lineWidth = 1 / globalScale;
+              ctx.setLineDash([5 / globalScale, 9 / globalScale]);
+              ctx.stroke();
+              ctx.setLineDash([]);
+              ctx.restore();
 
-              const cidNum = parseInt(cid);
-              for (let i = 0; i < 4; i++) {
-                const angle = (cidNum * 2 + i * 1.5) + Math.sin(time + i) * 0.3;
-                const dist = radius * (0.3 + Math.sin(time * 0.5 + i * 2) * 0.1);
-                const bx = cx + Math.cos(angle) * dist;
-                const by = cy + Math.sin(angle) * dist;
-                const br = radius * (0.5 + Math.sin(time * 0.7 + i) * 0.1);
-                drawBlob(bx, by, br, 0.05);
-              }
-
-              if (globalScale < 0.8 && label) {
-                const labelY = cy - radius - 25 / globalScale;
-                const fontSize = Math.max(10, 14 / globalScale);
-                ctx.font = `500 ${fontSize}px Inter, sans-serif`;
+              // Label pill — always visible, scales with zoom
+              if (label) {
+                const fontSize = Math.max(8, 10 / globalScale);
+                ctx.font = `500 ${fontSize}px 'Courier New', monospace`;
                 ctx.textAlign = 'center';
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                ctx.fillText(label, cx + 1, labelY + 1);
-                ctx.fillStyle = hexToRgba(color, 0.45);
-                ctx.fillText(label, cx, labelY);
+                ctx.textBaseline = 'middle';
+
+                const textW = ctx.measureText(label).width;
+                const padX = 7 / globalScale;
+                const padY = 3.5 / globalScale;
+                const pillW = textW + padX * 2;
+                const pillH = fontSize + padY * 2;
+                const labelX = cx;
+                const labelY = cy - radius - pillH / 2 - 6 / globalScale;
+                const r = pillH / 2;
+
+                // Pill background
+                ctx.beginPath();
+                if (ctx.roundRect) {
+                  ctx.roundRect(labelX - pillW / 2, labelY - pillH / 2, pillW, pillH, r);
+                } else {
+                  ctx.rect(labelX - pillW / 2, labelY - pillH / 2, pillW, pillH);
+                }
+                ctx.fillStyle = hexToRgba('#050505', 0.75);
+                ctx.fill();
+                ctx.strokeStyle = hexToRgba(color, 0.3);
+                ctx.lineWidth = 1 / globalScale;
+                ctx.stroke();
+
+                // Color pip
+                ctx.beginPath();
+                ctx.arc(labelX - textW / 2 - padX / 2, labelY, 2 / globalScale, 0, 2 * Math.PI);
+                ctx.fillStyle = hexToRgba(color, 0.7);
+                ctx.fill();
+
+                // Label text
+                ctx.fillStyle = hexToRgba(color, 0.75);
+                ctx.fillText(label, labelX + padX / 2, labelY);
               }
             });
           }}
