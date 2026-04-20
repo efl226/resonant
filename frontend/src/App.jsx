@@ -8,6 +8,7 @@ import DiscoverPanel from './components/DiscoverPanel';
 import ConnectionHint from './components/ConnectionHint';
 import ExplorePanel, { computeMatches, getSharedAttributes } from './components/ExplorePanel';
 import ComparePanel, { COLOR_A as COMPARE_COLOR_A, COLOR_B as COMPARE_COLOR_B } from './components/ComparePanel';
+import LayoutPicker from './components/LayoutPicker';
 import { loadGraphData, loadClusterData } from './api/client';
 import FALLBACK_DATA from './data/songsseed.json';
 import './index.css';
@@ -133,6 +134,7 @@ export default function App() {
   const [compareMode, setCompareMode] = useState(false);
   const [compareNodes, setCompareNodes] = useState([null, null]);
   const [rePickTarget, setRePickTarget] = useState(null);
+  const [activeLayout, setActiveLayout] = useState('default');
 
 
   useEffect(() => {
@@ -312,6 +314,29 @@ export default function App() {
 
   const handleToggleCombineMode = useCallback(() => {
     setCombineMode(prev => prev === 'intersection' ? 'union' : 'intersection');
+  }, []);
+
+  // Check if any node has alternative layout coords
+  const hasLayouts = useMemo(
+    () => fullGraphData.nodes.some(n => n.layouts?.sonic?.x != null),
+    [fullGraphData.nodes]
+  );
+
+  const handleChangeLayout = useCallback((layoutId) => {
+    setActiveLayout(layoutId);
+    setGraphData(prev => {
+      const updated = prev.nodes.map(node => {
+        if (layoutId === 'default') {
+          return { ...node, _targetX: node.umap_x, _targetY: node.umap_y };
+        }
+        const coords = node.layouts?.[layoutId];
+        if (coords?.x != null && coords?.y != null) {
+          return { ...node, _targetX: coords.x, _targetY: coords.y };
+        }
+        return node;
+      });
+      return { ...prev, nodes: updated };
+    });
   }, []);
 
   const { highlightNodes, highlightLinks, filterMatchSets } = useMemo(() => {
@@ -495,19 +520,26 @@ export default function App() {
 
       <div className="fixed top-4 left-4 right-4 z-20 flex items-start gap-4 pointer-events-none">
         <div className="pointer-events-auto">
-          <DiscoverPanel 
+          <DiscoverPanel
             graphData={fullGraphData}
             onNavigate={handleNodeClick}
             onFilter={handleDecadeFilter}
           />
         </div>
         <div className="pointer-events-auto flex-1 max-w-2xl">
-          <SearchBar 
-            data={fullGraphData} 
-            onSelect={handleNodeClick} 
+          <SearchBar
+            data={fullGraphData}
+            onSelect={handleNodeClick}
             onSearchResults={handleSearchResults}
             onReset={handleReset}
             searchActive={searchActive}
+          />
+        </div>
+        <div className="pointer-events-auto">
+          <LayoutPicker
+            activeLayout={activeLayout}
+            onChangeLayout={handleChangeLayout}
+            hasLayouts={hasLayouts}
           />
         </div>
       </div>

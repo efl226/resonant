@@ -50,7 +50,10 @@ def get_graph(collection: str = "default"):
                fun_fact, sonic_fingerprint,
                lyrics, lyrics_source,
                is_live, spotify_uri,
-               cluster_id
+               cluster_id,
+               umap_sonic_x, umap_sonic_y,
+               umap_vibe_x, umap_vibe_y,
+               umap_genetics_x, umap_genetics_y
         FROM songs
         WHERE collection_id = %s
     """, (collection,))
@@ -61,7 +64,7 @@ def get_graph(collection: str = "default"):
         if isinstance(musician_credits, str):
             try: musician_credits = json.loads(musician_credits)
             except: musician_credits = None
-        
+
         samples_from = row[39]
         if isinstance(samples_from, str):
             try: samples_from = json.loads(samples_from)
@@ -106,6 +109,11 @@ def get_graph(collection: str = "default"):
             "spotify_uri": row[45],
             "cluster_id": row[46],
             "umap_x": row[23], "umap_y": row[24],
+            "layouts": {
+                "sonic":    {"x": row[47], "y": row[48]},
+                "vibe":     {"x": row[49], "y": row[50]},
+                "genetics": {"x": row[51], "y": row[52]},
+            },
         })
 
     # Get links
