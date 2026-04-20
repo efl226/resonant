@@ -7,6 +7,7 @@ import PlayerBar from './components/PlayerBar';
 import DiscoverPanel from './components/DiscoverPanel';
 import ConnectionHint from './components/ConnectionHint';
 import ExplorePanel, { computeMatches, getSharedAttributes } from './components/ExplorePanel';
+import ComparePanel, { COLOR_A as COMPARE_COLOR_A, COLOR_B as COMPARE_COLOR_B } from './components/ComparePanel';
 import { loadGraphData, loadClusterData } from './api/client';
 import FALLBACK_DATA from './data/songsseed.json';
 import './index.css';
@@ -129,6 +130,9 @@ export default function App() {
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [hoveredVirtualLink, setHoveredVirtualLink] = useState(null);
   const [activeTab, setActiveTab] = useState('adjacent');
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareNodes, setCompareNodes] = useState([null, null]);
+  const [rePickTarget, setRePickTarget] = useState(null);
 
 
   useEffect(() => {
@@ -201,13 +205,17 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!selectedNode || !graphRef.current) return;
       if (e.key === 'Escape') {
-      if (selectedNode) {
-          setSelectedNode(null);
+        if (rePickTarget) { setRePickTarget(null); return; }
+        if (compareMode) {
+          setCompareMode(false);
+          setCompareNodes([null, null]);
+          return;
         }
+        if (selectedNode) { setSelectedNode(null); }
         return;
       }
+      if (!selectedNode || !graphRef.current) return;
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return;
       e.preventDefault();
       const directions = {
@@ -235,7 +243,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNode, graphData]);
+  }, [selectedNode, graphData, compareMode, rePickTarget]);
 
   const handleSearchResults = useCallback((resultIds) => {
     if (!resultIds || resultIds.length === 0) {
@@ -389,13 +397,39 @@ export default function App() {
     return vlinks;
   }, [selectedNode, activeFilters, filterMatchSets, highlightNodes, graphData.nodes]);
 
+  const handleStartCompare = useCallback((node) => {
+    setCompareMode(true);
+    setCompareNodes([node, null]);
+    setSelectedNode(null);
+  }, []);
+
+  const handleExitCompare = useCallback(() => {
+    setCompareMode(false);
+    setCompareNodes([null, null]);
+    setRePickTarget(null);
+  }, []);
+
   const handleNodeClick = useCallback((node) => {
+    if (compareMode) {
+      if (rePickTarget === 'A') {
+        setCompareNodes(prev => [node, prev[1]]);
+        setRePickTarget(null);
+      } else if (rePickTarget === 'B') {
+        setCompareNodes(prev => [prev[0], node]);
+        setRePickTarget(null);
+      } else if (!compareNodes[0]) {
+        setCompareNodes([node, null]);
+      } else {
+        setCompareNodes(prev => [prev[0], node]);
+      }
+      return;
+    }
     if (viewMode === 'graph' && graphRef.current) {
       graphRef.current.centerAt(node.x, node.y, 800);
       graphRef.current.zoom(4, 800);
     }
     setSelectedNode(node);
-  }, [viewMode]);
+  }, [viewMode, compareMode, compareNodes, rePickTarget]);
 
   const handleDecadeFilter = useCallback((filter) => {
   // Fire the same filter event the sidebar uses
@@ -405,12 +439,13 @@ export default function App() {
   }, []);
 
   const handleBackgroundClick = useCallback(() => {
+    if (compareMode) return; // overlay handles click-outside for compare
     if (hoveredVirtualLink) {
       handleNodeClick(hoveredVirtualLink._otherNode);
       return;
     }
     setSelectedNode(null);
-  }, [hoveredVirtualLink, handleNodeClick]);
+  }, [hoveredVirtualLink, handleNodeClick, compareMode]);
 
   
   
@@ -499,9 +534,67 @@ export default function App() {
         onNavigate={handleNodeClick}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        onCompare={handleStartCompare}
       />
 
-      
+      {/* Compare mode: click-outside overlay */}
+      {compareMode && !rePickTarget && compareNodes[0] && compareNodes[1] && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50"
+          style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+          onClick={handleExitCompare}
+        />
+      )}
+
+      {/* ComparePanel */}
+      {compareMode && compareNodes[0] && compareNodes[1] && !rePickTarget && (
+        <ComparePanel
+          nodeA={compareNodes[0]}
+          nodeB={compareNodes[1]}
+          allNodes={graphData.nodes}
+          allLinks={graphData.links}
+          onClose={handleExitCompare}
+          onRePickA={() => setRePickTarget('A')}
+          onRePickB={() => setRePickTarget('B')}
+          onSelectA={(node) => setCompareNodes(prev => [node, prev[1]])}
+          onSelectB={(node) => setCompareNodes(prev => [prev[0], node])}
+        />
+      )}
+
+      {/* Compare mode: picking banner (shown when waiting for a node pick) */}
+      {compareMode && (!compareNodes[1] || rePickTarget) && (
+        <div
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-full pointer-events-auto"
+          style={{
+            backgroundColor: 'rgba(8,8,8,0.92)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          }}
+        >
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{
+              backgroundColor: rePickTarget === 'A' ? COMPARE_COLOR_A : COMPARE_COLOR_B,
+              boxShadow: `0 0 6px ${rePickTarget === 'A' ? COMPARE_COLOR_A : COMPARE_COLOR_B}`,
+            }}
+          />
+          <span className="text-[11px] text-white/60">
+            {rePickTarget
+              ? `Click a song to replace Song ${rePickTarget}`
+              : 'Click a second song on the map to compare'
+            }
+          </span>
+          <button
+            onClick={rePickTarget ? () => setRePickTarget(null) : handleExitCompare}
+            className="text-[10px] text-white/30 hover:text-white/65 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
       <ConnectionHint
         link={hoveredLink || hoveredVirtualLink}
         mousePos={mousePos}
@@ -678,9 +771,35 @@ export default function App() {
               }
             }
 
+            // Draw compare gradient line between the two compared nodes
+            if (compareMode && compareNodes[0] && compareNodes[1]) {
+              const nA = graphData.nodes.find(n => n.id === compareNodes[0].id);
+              const nB = graphData.nodes.find(n => n.id === compareNodes[1].id);
+              if (nA?.x !== undefined && nB?.x !== undefined) {
+                const dx = nB.x - nA.x;
+                const dy = nB.y - nA.y;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                const RA = 18, RB = 18; // compare nodes are size 28, ring at r=14+4=18
+                if (len > RA + RB) {
+                  const nx = dx / len, ny = dy / len;
+                  const grad = ctx.createLinearGradient(nA.x, nA.y, nB.x, nB.y);
+                  grad.addColorStop(0, COMPARE_COLOR_A);
+                  grad.addColorStop(1, COMPARE_COLOR_B);
+                  ctx.strokeStyle = grad;
+                  ctx.lineWidth = 2 / globalScale;
+                  ctx.globalAlpha = 0.55;
+                  ctx.beginPath();
+                  ctx.moveTo(nA.x + nx * RA, nA.y + ny * RA);
+                  ctx.lineTo(nB.x - nx * RB, nB.y - ny * RB);
+                  ctx.stroke();
+                  ctx.globalAlpha = 1;
+                }
+              }
+            }
+
             nodesToLabel.forEach(node => {
               if (node.x === undefined || node.y === undefined) return;
-              
+
               const label = node.name || '';
               const artistLabel = node.artist || '';
               const fontSize = 13 / globalScale;
@@ -760,11 +879,20 @@ export default function App() {
           }}
 
           nodeCanvasObject={(node, ctx, globalScale) => {
-            const isModeActive = filteredNodeIds || selectedNode;
-            const isHighlighted = isModeActive ? (highlightNodes.has(node.id)) : true;
-            const isSelected = selectedNode?.id === node.id;
-            const alpha = isHighlighted ? 1 : 0.05;
-            const size = isSelected ? 30 : 20;
+            const isCompareA = compareMode && compareNodes[0]?.id === node.id;
+            const isCompareB = compareMode && compareNodes[1]?.id === node.id;
+
+            let isHighlighted;
+            if (compareMode) {
+              isHighlighted = isCompareA || isCompareB;
+            } else {
+              const isModeActive = filteredNodeIds || selectedNode;
+              isHighlighted = isModeActive ? highlightNodes.has(node.id) : true;
+            }
+
+            const isSelected = !compareMode && selectedNode?.id === node.id;
+            const alpha = isHighlighted ? 1 : compareMode ? 0.06 : 0.05;
+            const size = isSelected ? 30 : (isCompareA || isCompareB) ? 28 : 20;
 
             ctx.globalAlpha = alpha;
 
@@ -789,15 +917,26 @@ export default function App() {
             ctx.lineWidth = 1.5 / globalScale;
             ctx.stroke();
 
-            if (isSelected || (activeFilter && isHighlighted)) {
+            if (isCompareA || isCompareB) {
+              const ringColor = isCompareA ? COMPARE_COLOR_A : COMPARE_COLOR_B;
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, size / 2 + 4, 0, 2 * Math.PI);
+              ctx.strokeStyle = ringColor;
+              ctx.lineWidth = 2.5 / globalScale;
+              ctx.stroke();
+              // outer glow ring
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, size / 2 + 8, 0, 2 * Math.PI);
+              ctx.strokeStyle = ringColor + '44';
+              ctx.lineWidth = 1.5 / globalScale;
+              ctx.stroke();
+            } else if (isSelected || (activeFilter && isHighlighted)) {
               ctx.beginPath();
               ctx.arc(node.x, node.y, size / 2 + 3, 0, 2 * Math.PI);
               ctx.strokeStyle = activeFilter ? (node.visual_dna?.primary_color || '#fff') : '#fff';
               ctx.lineWidth = (activeFilter ? 4 : 2) / globalScale;
               ctx.stroke();
             }
-
-            
 
             ctx.globalAlpha = 1;
           }}

@@ -217,6 +217,7 @@ const ExplorePanel = ({
   onNavigate,
   activeTab,
   onTabChange,
+  onCompare,
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedSections, setExpandedSections] = useState(
@@ -516,12 +517,27 @@ const ExplorePanel = ({
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setCollapsed(c => !c)}
-            className="text-white/25 hover:text-white/60 transition-colors text-base leading-none w-5 h-5 flex items-center justify-center"
-          >
-            {collapsed ? '+' : '−'}
-          </button>
+          <div className="flex items-center gap-1.5">
+            {onCompare && (
+              <button
+                onClick={() => onCompare(selectedNode)}
+                className="text-[9px] px-2.5 py-1 rounded-full transition-all font-medium hover:opacity-90"
+                style={{
+                  backgroundColor: 'rgba(74,158,232,0.12)',
+                  border: '1px solid rgba(74,158,232,0.25)',
+                  color: 'rgba(74,158,232,0.75)',
+                }}
+              >
+                Compare
+              </button>
+            )}
+            <button
+              onClick={() => setCollapsed(c => !c)}
+              className="text-white/25 hover:text-white/60 transition-colors text-base leading-none w-5 h-5 flex items-center justify-center"
+            >
+              {collapsed ? '+' : '−'}
+            </button>
+          </div>
         </div>
 
         {!collapsed && (
