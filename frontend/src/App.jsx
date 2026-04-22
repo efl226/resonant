@@ -9,6 +9,7 @@ import ConnectionHint from './components/ConnectionHint';
 import ExplorePanel, { computeMatches, getSharedAttributes } from './components/ExplorePanel';
 import ComparePanel, { COLOR_A as COMPARE_COLOR_A, COLOR_B as COMPARE_COLOR_B } from './components/ComparePanel';
 import LayoutPicker from './components/LayoutPicker';
+import Graph3D from './components/Graph3D';
 import { loadGraphData, loadClusterData } from './api/client';
 import FALLBACK_DATA from './data/songsseed.json';
 import './index.css';
@@ -135,6 +136,7 @@ export default function App() {
   const [compareNodes, setCompareNodes] = useState([null, null]);
   const [rePickTarget, setRePickTarget] = useState(null);
   const [activeLayout, setActiveLayout] = useState('default');
+  const [graphMode, setGraphMode] = useState('2d');
 
 
   useEffect(() => {
@@ -316,9 +318,13 @@ export default function App() {
     setCombineMode(prev => prev === 'intersection' ? 'union' : 'intersection');
   }, []);
 
-  // Check if any node has alternative layout coords
+  // Check if layout coords are available for 2D and 3D
   const hasLayouts = useMemo(
     () => fullGraphData.nodes.some(n => n.layouts?.sonic?.x != null),
+    [fullGraphData.nodes]
+  );
+  const hasLayouts3d = useMemo(
+    () => fullGraphData.nodes.some(n => n.layouts3d?.sonic?.x != null),
     [fullGraphData.nodes]
   );
 
@@ -326,6 +332,14 @@ export default function App() {
     setActiveLayout(layoutId);
     setGraphData(prev => {
       const updated = prev.nodes.map(node => {
+        if (graphMode === '3d') {
+          const coords = node.layouts3d?.[layoutId];
+          if (coords?.x != null && coords?.y != null && coords?.z != null) {
+            return { ...node, _targetX: coords.x, _targetY: coords.y, _targetZ: coords.z };
+          }
+          return node;
+        }
+        // 2D mode
         if (layoutId === 'default') {
           return { ...node, _targetX: node.umap_x, _targetY: node.umap_y };
         }
@@ -337,7 +351,44 @@ export default function App() {
       });
       return { ...prev, nodes: updated };
     });
-  }, []);
+  }, [graphMode]);
+
+  const handleToggleGraphMode = useCallback(() => {
+    const newMode = graphMode === '2d' ? '3d' : '2d';
+    setGraphMode(newMode);
+
+    if (newMode === '3d') {
+      // In 3D, "default" layout doesn't exist — switch to sonic
+      const initLayout = activeLayout === 'default' ? 'sonic' : activeLayout;
+      setActiveLayout(initLayout);
+      setGraphData(prev => ({
+        ...prev,
+        nodes: prev.nodes.map(node => {
+          const coords = node.layouts3d?.[initLayout];
+          if (coords?.x != null) {
+            return { ...node, _targetX: coords.x, _targetY: coords.y, _targetZ: coords.z };
+          }
+          return node;
+        }),
+      }));
+    } else {
+      // Return to 2D
+      const layout2d = activeLayout === 'default' ? 'default' : activeLayout;
+      setGraphData(prev => ({
+        ...prev,
+        nodes: prev.nodes.map(node => {
+          if (layout2d === 'default') {
+            return { ...node, _targetX: node.umap_x, _targetY: node.umap_y, _targetZ: undefined };
+          }
+          const coords = node.layouts?.[layout2d];
+          if (coords?.x != null) {
+            return { ...node, _targetX: coords.x, _targetY: coords.y, _targetZ: undefined };
+          }
+          return node;
+        }),
+      }));
+    }
+  }, [graphMode, activeLayout]);
 
   const { highlightNodes, highlightLinks, filterMatchSets } = useMemo(() => {
     const nodes = new Set();
@@ -518,7 +569,16 @@ export default function App() {
     }}
     >
 
-      <div className="fixed top-4 left-4 right-4 z-20 flex items-start gap-4 pointer-events-none">
+      {/* Map controls — hidden when a node is selected */}
+      <div
+        className="fixed top-4 left-4 right-4 z-20 flex items-start gap-4 pointer-events-none"
+        style={{
+          opacity: selectedNode ? 0 : 1,
+          transform: selectedNode ? 'translateY(-6px)' : 'translateY(0)',
+          pointerEvents: selectedNode ? 'none' : undefined,
+          transition: 'opacity 0.18s ease, transform 0.18s ease',
+        }}
+      >
         <div className="pointer-events-auto">
           <DiscoverPanel
             graphData={fullGraphData}
@@ -535,11 +595,44 @@ export default function App() {
             searchActive={searchActive}
           />
         </div>
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto flex items-center gap-2">
+          {/* 2D / 3D mode toggle */}
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', gap: 2,
+              backgroundColor: 'rgba(8,8,8,0.85)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 12,
+              padding: '4px 6px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            }}
+          >
+            {['2d', '3d'].map(mode => (
+              <button
+                key={mode}
+                onClick={() => mode !== graphMode && handleToggleGraphMode()}
+                style={{
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em',
+                  padding: '5px 12px', borderRadius: 8, cursor: 'pointer',
+                  backgroundColor: graphMode === mode ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  border: graphMode === mode ? '1px solid rgba(255,255,255,0.18)' : '1px solid transparent',
+                  color: graphMode === mode ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.28)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
           <LayoutPicker
             activeLayout={activeLayout}
             onChangeLayout={handleChangeLayout}
             hasLayouts={hasLayouts}
+            hasLayouts3d={hasLayouts3d}
+            graphMode={graphMode}
           />
         </div>
       </div>
@@ -638,6 +731,24 @@ export default function App() {
 
       {viewMode === 'timeline' ? (
         <TimelineView data={graphData} onSelect={handleNodeClick} />
+      ) : graphMode === '3d' ? (
+        <Graph3D
+          graphData={graphData}
+          selectedNode={selectedNode}
+          highlightNodes={highlightNodes}
+          highlightLinks={highlightLinks}
+          filteredNodeIds={filteredNodeIds}
+          activeFilter={activeFilter}
+          compareMode={compareMode}
+          compareNodes={compareNodes}
+          windowSize={windowSize}
+          onNodeClick={handleNodeClick}
+          onBackgroundClick={handleBackgroundClick}
+          onNodeHover={node => setHoveredNode(node)}
+          onLinkHover={link => setHoveredLink(link)}
+          onLinkClick={otherNode => handleNodeClick(otherNode)}
+          loading={loading}
+        />
       ) : (
         <ForceGraph2D
           ref={graphRef}

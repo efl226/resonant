@@ -128,11 +128,11 @@ export function getSharedAttributes(songA, songB) {
 }
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const MONO = "'IBM Plex Mono', 'Courier New', monospace";
-const SERIF = "'Playfair Display', Georgia, serif";
-const GOLD = 'rgba(210,185,120,0.5)';
-const GOLD_DIM = 'rgba(210,185,120,0.18)';
-const PANEL_BG = '#0c0a08';
+const MONO = 'Inter, system-ui, sans-serif';
+const SERIF = 'Inter, system-ui, sans-serif';
+const GOLD = 'rgba(255,255,255,0.5)';
+const GOLD_DIM = 'rgba(255,255,255,0.1)';
+const PANEL_BG = '#0a0a0a';
 const groove = { borderBottom: '1px solid rgba(255,255,255,0.04)', boxShadow: '0 1px 0 rgba(0,0,0,0.5)' };
 
 const CHIP_COLORS = {
@@ -145,13 +145,6 @@ const CHIP_COLORS = {
 
 function useDesignFonts() {
   useEffect(() => {
-    if (!document.querySelector('[data-resonant-compare-fonts]')) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap';
-      link.setAttribute('data-resonant-compare-fonts', '1');
-      document.head.appendChild(link);
-    }
     if (!document.querySelector('[data-resonant-dseg]')) {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
@@ -171,11 +164,11 @@ const SectionHeader = ({ title, count, sectionKey, expanded, onToggle }) => (
     onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
   >
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-      <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.22em', textTransform: 'uppercase', color: GOLD, flexShrink: 0 }}>{title}</span>
-      {count > 0 && <span style={{ fontFamily: MONO, fontSize: 8, color: 'rgba(255,255,255,0.18)', flexShrink: 0 }}>[{count}]</span>}
+      <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.07em', textTransform: 'uppercase', color: GOLD, flexShrink: 0, fontWeight: 500 }}>{title}</span>
+      {count > 0 && <span style={{ fontFamily: MONO, fontSize: 9, color: 'rgba(255,255,255,0.18)', flexShrink: 0 }}>[{count}]</span>}
       <div style={{ flex: 1, height: 1, background: `linear-gradient(to right, ${GOLD_DIM}, transparent)`, minWidth: 0 }} />
     </div>
-    <span style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(255,255,255,0.2)', marginLeft: 8, flexShrink: 0 }}>{expanded ? '−' : '+'}</span>
+    <span style={{ fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.2)', marginLeft: 8, flexShrink: 0 }}>{expanded ? '−' : '+'}</span>
   </button>
 );
 
@@ -227,7 +220,7 @@ const BpmDisplay = ({ bpm, isActive, onClick, disabled }) => {
           <div style={{ position: 'absolute', top: 4, right: 4, width: 4, height: 4, borderRadius: '50%', backgroundColor: LED_AMBER, boxShadow: `0 0 5px ${LED_GLOW}` }} />
         )}
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.22)', marginTop: 5 }}>
+      <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginTop: 5 }}>
         BPM
       </div>
     </div>
@@ -275,18 +268,18 @@ const ConsoleButton = ({ label, value, type, count, isActive, disabled, onToggle
               : `inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.6)`,
         }}
       >
-        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.04em', color: isActive ? c : 'rgba(255,255,255,0.52)', whiteSpace: 'nowrap', lineHeight: 1 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.01em', color: isActive ? c : 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap', lineHeight: 1 }}>
           {displayValue}
         </div>
         {count !== undefined && count > 0 && (
-          <div style={{ fontFamily: MONO, fontSize: 7, color: isActive ? `${c}99` : 'rgba(255,255,255,0.18)', marginTop: 2, lineHeight: 1 }}>
+          <div style={{ fontFamily: MONO, fontSize: 8, color: isActive ? `${c}99` : 'rgba(255,255,255,0.25)', marginTop: 2, lineHeight: 1 }}>
             {count}
           </div>
         )}
       </div>
 
       {/* Label engraved below */}
-      <div style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.18)' }}>
+      <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>
         {label}
       </div>
     </div>
@@ -330,7 +323,7 @@ const VuMeter = ({ label, level = 0 }) => {
           );
         })}
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)' }}>
+      <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)' }}>
         {label}
       </div>
     </div>
@@ -370,7 +363,7 @@ const SonicStrip = ({ node, activeFilters, attrCounts, onToggleFilter }) => {
       padding: '12px 12px 10px',
     }}>
       {/* Channel strip label */}
-      <div style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.25em', textTransform: 'uppercase', color: CHIP_COLORS.sonic.text, marginBottom: 10 }}>
+      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.07em', textTransform: 'uppercase', color: CHIP_COLORS.sonic.text, marginBottom: 10, fontWeight: 500 }}>
         Sonic
       </div>
 
@@ -434,12 +427,12 @@ const Chip = ({ type, value, label, count, colors, activeFilters, onToggleFilter
       disabled={disabled}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 5,
-        padding: '3px 8px', fontFamily: MONO, fontSize: 9, letterSpacing: '0.05em',
+        padding: '4px 9px', fontFamily: MONO, fontSize: 10,
         cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.2 : 1,
         backgroundColor: isActive ? c.bg : 'rgba(255,255,255,0.03)',
         border: isActive ? `1px solid ${c.border}` : '1px solid rgba(255,255,255,0.08)',
         color: isActive ? c.text : 'rgba(255,255,255,0.4)',
-        borderRadius: 2, transition: 'all 0.15s',
+        borderRadius: 8, transition: 'all 0.15s',
       }}
       onMouseEnter={e => { if (!disabled) e.currentTarget.style.borderColor = isActive ? c.border : 'rgba(255,255,255,0.18)'; }}
       onMouseLeave={e => { if (!disabled) e.currentTarget.style.borderColor = isActive ? c.border : 'rgba(255,255,255,0.08)'; }}
@@ -580,8 +573,10 @@ const ExplorePanel = ({
 
   const panelShell = {
     backgroundColor: PANEL_BG,
-    border: '1px solid rgba(210,185,120,0.1)',
-    borderRadius: 4,
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 14,
     boxShadow: '0 12px 48px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5)',
   };
 
@@ -593,11 +588,11 @@ const ExplorePanel = ({
         <div style={{ ...panelShell, overflow: 'hidden' }}>
           <div style={{ padding: '10px 14px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', ...groove }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.22em', textTransform: 'uppercase', color: GOLD }}>Active Filters</span>
+              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', color: GOLD, fontWeight: 500 }}>Active Filters</span>
               {nonAdjacentFilters.length > 1 && (
                 <button
                   onClick={onToggleCombineMode}
-                  style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.1em', padding: '2px 6px', borderRadius: 2, cursor: 'pointer', backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}
+                  style={{ fontFamily: MONO, fontSize: 9, padding: '2px 8px', borderRadius: 6, cursor: 'pointer', backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}
                 >
                   {combineMode === 'intersection' ? 'ALL' : 'ANY'}
                 </button>
@@ -605,7 +600,7 @@ const ExplorePanel = ({
             </div>
             <button
               onClick={onClearFilters}
-              style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.1em', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)' }}
+              style={{ fontFamily: MONO, fontSize: 9, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)' }}
               onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}
               onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}
             >
@@ -616,7 +611,7 @@ const ExplorePanel = ({
             {nonAdjacentFilters.map(([key, filter]) => (
               <span key={key} onClick={() => onToggleFilter(key, filter)} style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
-                fontFamily: MONO, fontSize: 9, letterSpacing: '0.05em',
+                fontFamily: MONO, fontSize: 10, letterSpacing: '0.01em',
                 padding: '3px 8px', borderRadius: 2, cursor: 'pointer',
                 backgroundColor: `rgba(${accentRgb}, 0.1)`,
                 border: `1px solid rgba(${accentRgb}, 0.25)`,
@@ -628,7 +623,7 @@ const ExplorePanel = ({
             ))}
           </div>
           {matchedSongs.length > 0 && (
-            <div style={{ padding: '0 14px 10px', fontFamily: MONO, fontSize: 9, color: `rgba(${accentRgb}, 0.35)`, letterSpacing: '0.05em' }}>
+            <div style={{ padding: '0 14px 10px', fontFamily: MONO, fontSize: 10, color: `rgba(${accentRgb}, 0.4)` }}>
               {matchedSongs.length} song{matchedSongs.length !== 1 ? 's' : ''} highlighted
             </div>
           )}
@@ -639,19 +634,20 @@ const ExplorePanel = ({
       <div style={{ ...panelShell, display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '60vh' }}>
 
         {/* Folder tab header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 14px', paddingTop: 10, borderBottom: '1px solid rgba(210,185,120,0.1)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 14px', paddingTop: 10, borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
             {[['adjacent', 'Adjacent'], ['explore', 'Explore']].map(([tab, label]) => {
               const isActive = activeTab === tab;
               return (
                 <button key={tab} onClick={() => onTabChange(tab)} style={{
-                  fontFamily: MONO, fontSize: 8, letterSpacing: '0.18em', textTransform: 'uppercase',
-                  padding: '6px 12px 5px', cursor: 'pointer',
-                  borderRadius: '2px 2px 0 0',
-                  border: isActive ? '1px solid rgba(210,185,120,0.15)' : '1px solid rgba(255,255,255,0.06)',
-                  borderBottom: isActive ? `1px solid ${PANEL_BG}` : '1px solid rgba(255,255,255,0.06)',
+                  fontFamily: MONO, fontSize: 10, letterSpacing: '0.04em',
+                  padding: '6px 14px 5px', cursor: 'pointer',
+                  borderRadius: '8px 8px 0 0',
+                  border: isActive ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.04)',
+                  borderBottom: isActive ? `1px solid ${PANEL_BG}` : '1px solid rgba(255,255,255,0.04)',
                   backgroundColor: isActive ? PANEL_BG : 'rgba(255,255,255,0.02)',
-                  color: isActive ? GOLD : 'rgba(255,255,255,0.25)',
+                  color: isActive ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.25)',
+                  fontWeight: isActive ? 500 : 400,
                   marginBottom: isActive ? -1 : 0,
                 }}>
                   {label}
@@ -664,7 +660,7 @@ const ExplorePanel = ({
             {onCompare && (
               <button
                 onClick={() => onCompare(selectedNode)}
-                style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.18em', textTransform: 'uppercase', padding: '4px 10px', cursor: 'pointer', borderRadius: 2, backgroundColor: 'transparent', border: '1px dashed rgba(74,158,232,0.3)', color: 'rgba(74,158,232,0.6)' }}
+                style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.02em', padding: '4px 12px', cursor: 'pointer', borderRadius: 8, backgroundColor: 'transparent', border: '1px dashed rgba(74,158,232,0.3)', color: 'rgba(74,158,232,0.6)' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(74,158,232,0.6)'; e.currentTarget.style.color = 'rgba(74,158,232,0.9)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(74,158,232,0.3)'; e.currentTarget.style.color = 'rgba(74,158,232,0.6)'; }}
               >
@@ -705,10 +701,10 @@ const ExplorePanel = ({
               backgroundColor: clusterInfo.meta?.color || 'rgba(255,255,255,0.3)',
               boxShadow: clusterInfo.meta?.color ? `0 0 6px ${clusterInfo.meta.color}88` : 'none',
             }} />
-            <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.16em', textTransform: 'uppercase', color: clusterInfo.meta?.color ? `${clusterInfo.meta.color}cc` : 'rgba(255,255,255,0.35)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.03em', color: clusterInfo.meta?.color ? `${clusterInfo.meta.color}cc` : 'rgba(255,255,255,0.45)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
               {clusterInfo.meta?.label || `Cluster ${selectedNode.cluster_id}`}
             </span>
-            <span style={{ fontFamily: MONO, fontSize: 8, color: 'rgba(255,255,255,0.18)', flexShrink: 0 }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>
               {clusterInfo.songs.length + 1} songs →
             </span>
           </button>
@@ -721,7 +717,7 @@ const ExplorePanel = ({
             {activeTab === 'adjacent' && (
               <div style={{ padding: '8px 10px' }}>
                 {nearbySongs.length === 0 ? (
-                  <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 12, color: 'rgba(255,255,255,0.2)', textAlign: 'center', padding: '20px 0' }}>
+                  <p style={{ fontFamily: SERIF, fontSize: 12, color: 'rgba(255,255,255,0.2)', textAlign: 'center', padding: '20px 0' }}>
                     No spatial data available
                   </p>
                 ) : nearbySongs.map((song, idx) => {
@@ -743,14 +739,14 @@ const ExplorePanel = ({
                         </div>
                       )}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: SERIF, fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{song.name}</div>
-                        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.06em', color: `${songAccent}88`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2, marginBottom: 5 }}>{song.artist}</div>
+                        <div style={{ fontFamily: SERIF, fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{song.name}</div>
+                        <div style={{ fontFamily: MONO, fontSize: 10, color: `${songAccent}88`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2, marginBottom: 5 }}>{song.artist}</div>
                         {song.sharedAttrs.length > 0 && (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                             {song.sharedAttrs.map((attr, i) => (
                               <span key={i} onClick={e => { e.stopPropagation(); onToggleFilter(`${attr.type}:${attr.value}`, { type: attr.type, value: attr.value }); }} style={{
-                                fontFamily: MONO, fontSize: 8, letterSpacing: '0.06em',
-                                padding: '2px 6px', borderRadius: 2, cursor: 'pointer',
+                                fontFamily: MONO, fontSize: 9,
+                                padding: '3px 7px', borderRadius: 6, cursor: 'pointer',
                                 backgroundColor: activeFilters.has(`${attr.type}:${attr.value}`) ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
                                 border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)',
                               }}>
@@ -785,15 +781,15 @@ const ExplorePanel = ({
                       backgroundColor: clusterInfo.meta?.color || 'rgba(255,255,255,0.3)',
                       boxShadow: clusterInfo.meta?.color ? `0 0 6px ${clusterInfo.meta.color}88` : 'none',
                     }} />
-                    <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.22em', textTransform: 'uppercase', color: clusterInfo.meta?.color ? `${clusterInfo.meta.color}cc` : GOLD, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
+                    <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.04em', color: clusterInfo.meta?.color ? `${clusterInfo.meta.color}cc` : GOLD, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160, fontWeight: 500 }}>
                       {clusterInfo.meta?.label || `Cluster ${selectedNode.cluster_id}`}
                     </span>
-                    <span style={{ fontFamily: MONO, fontSize: 8, color: 'rgba(255,255,255,0.18)', flexShrink: 0 }}>
+                    <span style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>
                       [{clusterInfo.songs.length}]
                     </span>
                     <div style={{ flex: 1, height: 1, background: clusterInfo.meta?.color ? `linear-gradient(to right, ${clusterInfo.meta.color}30, transparent)` : `linear-gradient(to right, ${GOLD_DIM}, transparent)`, minWidth: 0 }} />
                   </div>
-                  <span style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(255,255,255,0.2)', marginLeft: 8, flexShrink: 0 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 13, color: 'rgba(255,255,255,0.2)', marginLeft: 8, flexShrink: 0 }}>
                     {expandedSections.has('cluster') ? '−' : '+'}
                   </span>
                 </button>
@@ -803,11 +799,11 @@ const ExplorePanel = ({
                       onClick={() => onToggleFilter('cluster:current', { type: 'cluster', value: selectedNode.cluster_id })}
                       style={{
                         display: 'block', width: '100%', textAlign: 'left',
-                        fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em',
-                        padding: '6px 10px', marginBottom: 8, cursor: 'pointer', borderRadius: 2,
-                        backgroundColor: activeFilters.has('cluster:current') ? 'rgba(210,185,120,0.06)' : 'transparent',
-                        border: activeFilters.has('cluster:current') ? `1px solid ${GOLD}` : '1px solid rgba(255,255,255,0.08)',
-                        color: activeFilters.has('cluster:current') ? GOLD : 'rgba(255,255,255,0.3)',
+                        fontFamily: MONO, fontSize: 10,
+                        padding: '6px 10px', marginBottom: 8, cursor: 'pointer', borderRadius: 8,
+                        backgroundColor: activeFilters.has('cluster:current') ? 'rgba(255,255,255,0.06)' : 'transparent',
+                        border: activeFilters.has('cluster:current') ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.08)',
+                        color: activeFilters.has('cluster:current') ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.35)',
                       }}
                     >
                       {activeFilters.has('cluster:current') ? `✓ Showing all ${clusterInfo.songs.length} on graph` : `Show all ${clusterInfo.songs.length} songs on graph →`}
@@ -828,8 +824,8 @@ const ExplorePanel = ({
                             <div style={{ width: 24, height: 24, flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }} />
                           )}
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontFamily: SERIF, fontSize: 11, color: 'rgba(255,255,255,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{song.name}</div>
-                            <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.28)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{song.artist}</div>
+                            <div style={{ fontFamily: SERIF, fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.75)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{song.name}</div>
+                            <div style={{ fontFamily: MONO, fontSize: 9, color: 'rgba(255,255,255,0.32)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{song.artist}</div>
                           </div>
                         </button>
                       ))}
@@ -854,10 +850,10 @@ const ExplorePanel = ({
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <span style={{ color: cfg.color, fontSize: 12 }}>{cfg.icon}</span>
-                              <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', color: cfg.color }}>{cfg.label}</span>
+                              <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.04em', color: cfg.color, fontWeight: 500 }}>{cfg.label}</span>
                             </div>
                             <button onClick={() => onToggleFilter(filterKey, { type: 'connection', value: linkType })} style={{
-                              fontFamily: MONO, fontSize: 8, letterSpacing: '0.1em', padding: '2px 8px', cursor: 'pointer', borderRadius: 2,
+                              fontFamily: MONO, fontSize: 10, padding: '3px 10px', cursor: 'pointer', borderRadius: 8,
                               backgroundColor: isActive ? `${cfg.color}18` : 'transparent',
                               border: isActive ? `1px solid ${cfg.color}55` : '1px solid rgba(255,255,255,0.08)',
                               color: isActive ? cfg.color : 'rgba(255,255,255,0.28)',
@@ -870,11 +866,11 @@ const ExplorePanel = ({
                               <div key={i} style={{ padding: '8px 10px', backgroundColor: `${cfg.color}07`, borderLeft: `2px solid ${cfg.color}55`, borderTop: `1px solid ${cfg.color}15`, borderRight: `1px solid ${cfg.color}15`, borderBottom: `1px solid ${cfg.color}15` }}>
                                 {otherNode && (
                                   <button onClick={() => onNavigate(otherNode)} style={{ textAlign: 'left', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: link.reason ? 4 : 0 }}>
-                                    <span style={{ fontFamily: SERIF, fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{otherNode.name}</span>
-                                    <span style={{ fontFamily: MONO, fontSize: 9, color: 'rgba(255,255,255,0.3)', marginLeft: 6, letterSpacing: '0.04em' }}>{otherNode.artist}</span>
+                                    <span style={{ fontFamily: SERIF, fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>{otherNode.name}</span>
+                                    <span style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(255,255,255,0.35)', marginLeft: 6 }}>{otherNode.artist}</span>
                                   </button>
                                 )}
-                                {link.reason && <p style={{ fontFamily: MONO, fontSize: 9, color: 'rgba(255,255,255,0.28)', lineHeight: 1.5, margin: 0 }}>{link.reason}</p>}
+                                {link.reason && <p style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(255,255,255,0.32)', lineHeight: 1.5, margin: 0 }}>{link.reason}</p>}
                               </div>
                             ))}
                           </div>
@@ -903,7 +899,7 @@ const ExplorePanel = ({
                   {/* Moods */}
                   {(selectedNode.semantic_dna?.mood || []).length > 0 && (
                     <div>
-                      <div style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.22em', textTransform: 'uppercase', color: CHIP_COLORS.mood.text, marginBottom: 7 }}>Mood</div>
+                      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500, color: CHIP_COLORS.mood.text, marginBottom: 7 }}>Mood</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                         {selectedNode.semantic_dna.mood.map(m => (
                           <Chip key={m} type="mood" value={m} count={attrCounts[`mood:${m}`] ?? 0} colors={CHIP_COLORS.mood} activeFilters={activeFilters} onToggleFilter={onToggleFilter} />
@@ -915,7 +911,7 @@ const ExplorePanel = ({
                   {/* Themes */}
                   {(selectedNode.semantic_dna?.themes || []).length > 0 && (
                     <div>
-                      <div style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.22em', textTransform: 'uppercase', color: CHIP_COLORS.theme.text, marginBottom: 7 }}>Themes</div>
+                      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500, color: CHIP_COLORS.theme.text, marginBottom: 7 }}>Themes</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                         {selectedNode.semantic_dna.themes.map(t => (
                           <Chip key={t} type="theme" value={t} label={`#${t}`} count={attrCounts[`theme:${t}`] ?? 0} colors={CHIP_COLORS.theme} activeFilters={activeFilters} onToggleFilter={onToggleFilter} />
@@ -927,7 +923,7 @@ const ExplorePanel = ({
                   {/* Instruments */}
                   {(selectedNode.sonic_dna?.prominent_instruments || []).length > 0 && (
                     <div>
-                      <div style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.22em', textTransform: 'uppercase', color: CHIP_COLORS.instr.text, marginBottom: 7 }}>Instruments</div>
+                      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500, color: CHIP_COLORS.instr.text, marginBottom: 7 }}>Instruments</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                         {selectedNode.sonic_dna.prominent_instruments.map(i => (
                           <Chip key={i} type="instrument" value={i} count={attrCounts[`instrument:${i}`] ?? 0} colors={CHIP_COLORS.instr} activeFilters={activeFilters} onToggleFilter={onToggleFilter} />
@@ -939,7 +935,7 @@ const ExplorePanel = ({
                   {/* People & Places */}
                   {hasPeopleAndPlaces && (
                     <div>
-                      <div style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.22em', textTransform: 'uppercase', color: CHIP_COLORS.people.text, marginBottom: 7 }}>People & Places</div>
+                      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500, color: CHIP_COLORS.people.text, marginBottom: 7 }}>People & Places</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                         {selectedNode.genetic_dna?.producer && (
                           <Chip type="producer" value={selectedNode.genetic_dna.producer} label={`◉ ${selectedNode.genetic_dna.producer}`} count={attrCounts[`producer:${selectedNode.genetic_dna.producer}`] ?? 0} colors={CHIP_COLORS.people} activeFilters={activeFilters} onToggleFilter={onToggleFilter} />

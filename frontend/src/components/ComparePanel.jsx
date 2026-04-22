@@ -25,18 +25,6 @@ const LINK_COLORS = {
   harmonic_bridge: '#E8C94A',
 };
 
-// Inject Google Fonts once
-function useDesignFonts() {
-  useEffect(() => {
-    if (document.querySelector('[data-resonant-compare-fonts]')) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap';
-    link.setAttribute('data-resonant-compare-fonts', '1');
-    document.head.appendChild(link);
-  }, []);
-}
-
 // Inject animation keyframes once
 const PANEL_ANIM_ID = 'resonant-compare-anim';
 function useAnimStyles() {
@@ -113,16 +101,13 @@ function computeComparison(nodeA, nodeB, allLinks) {
 
 // ── Design tokens ────────────────────────────────────────────────────────────
 
-const MONO = "'IBM Plex Mono', 'Courier New', monospace";
-const SERIF = "'Playfair Display', Georgia, serif";
-// Warm gold — like ink printed on a vinyl label
-const GOLD = 'rgba(210,185,120,0.5)';
-const GOLD_DIM = 'rgba(210,185,120,0.2)';
+const MONO = 'Inter, system-ui, sans-serif';
+const SERIF = 'Inter, system-ui, sans-serif';
+const GOLD = 'rgba(255,255,255,0.5)';
+const GOLD_DIM = 'rgba(255,255,255,0.1)';
 
-// Groove divider — two hairlines, like a pressed vinyl groove
 const grooveBorder = {
-  borderBottom: '1px solid rgba(255,255,255,0.04)',
-  boxShadow: '0 1px 0 rgba(0,0,0,0.6)',
+  borderBottom: '1px solid rgba(255,255,255,0.06)',
 };
 
 // ── Sub-components ───────────────────────────────────────────────────────────
@@ -130,7 +115,7 @@ const grooveBorder = {
 function SectionLabel({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, paddingLeft: 20, paddingRight: 20 }}>
-      <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.22em', textTransform: 'uppercase', color: GOLD }}>
+      <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.07em', textTransform: 'uppercase', color: GOLD, fontWeight: 500 }}>
         {children}
       </span>
       <div style={{ flex: 1, height: 1, background: `linear-gradient(to right, ${GOLD_DIM}, transparent)` }} />
@@ -141,7 +126,7 @@ function SectionLabel({ children }) {
 function MatchBadge({ match }) {
   if (!match) {
     return (
-      <span style={{ fontFamily: MONO, fontSize: 8, color: 'rgba(255,255,255,0.12)', letterSpacing: '0.05em' }}>
+      <span style={{ fontFamily: MONO, fontSize: 9, color: 'rgba(255,255,255,0.12)' }}>
         vs
       </span>
     );
@@ -150,13 +135,13 @@ function MatchBadge({ match }) {
   return (
     <span style={{
       fontFamily: MONO,
-      fontSize: 8,
-      letterSpacing: '0.1em',
+      fontSize: 9,
+      letterSpacing: '0.04em',
       textTransform: 'uppercase',
       color: isSame ? '#6BCB77' : '#E8C94A',
       border: `1px dashed ${isSame ? 'rgba(107,203,119,0.45)' : 'rgba(232,201,74,0.45)'}`,
-      padding: '2px 5px',
-      borderRadius: 2,
+      padding: '2px 6px',
+      borderRadius: 6,
       whiteSpace: 'nowrap',
     }}>
       {isSame ? '≡ same' : '≈ near'}
@@ -179,16 +164,16 @@ function CompareRow({ label, a, b, match, index }) {
         animation: `compareFadeRow 0.3s ease ${index * 0.04}s both`,
       }}
     >
-      <div style={{ textAlign: 'right', fontFamily: MONO, fontSize: 11, color: 'rgba(255,255,255,0.72)', letterSpacing: '0.02em' }}>
+      <div style={{ textAlign: 'right', fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.72)' }}>
         {a ?? <span style={{ opacity: 0.2 }}>—</span>}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-        <span style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.18em', textTransform: 'uppercase', color: GOLD_DIM }}>
+        <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.06em', textTransform: 'uppercase', color: GOLD_DIM }}>
           {label}
         </span>
         <MatchBadge match={match} />
       </div>
-      <div style={{ textAlign: 'left', fontFamily: MONO, fontSize: 11, color: 'rgba(255,255,255,0.72)', letterSpacing: '0.02em' }}>
+      <div style={{ textAlign: 'left', fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.72)' }}>
         {b ?? <span style={{ opacity: 0.2 }}>—</span>}
       </div>
     </div>
@@ -199,10 +184,9 @@ function Tag({ label, color }) {
   return (
     <span style={{
       fontFamily: MONO,
-      fontSize: 9,
-      letterSpacing: '0.06em',
-      padding: '3px 8px',
-      borderRadius: 3,
+      fontSize: 10,
+      padding: '3px 9px',
+      borderRadius: 8,
       backgroundColor: `${color}12`,
       color: `${color}cc`,
       border: `1px solid ${color}20`,
@@ -237,7 +221,7 @@ function ArraySection({ title, data, colorA, colorB }) {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
           {data.shared.length > 0 && (
             <>
-              <span style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.2em', color: GOLD_DIM, textTransform: 'uppercase' }}>shared</span>
+              <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.05em', color: GOLD_DIM, textTransform: 'uppercase' }}>shared</span>
               <TagGroup items={data.shared} color="#6BCB77" />
             </>
           )}
@@ -291,8 +275,8 @@ function SongSlot({ node, color, side, allNodes, onSelect, onPickFromMap }) {
             title="Click to change song"
             style={{
               fontFamily: SERIF,
-              fontSize: 16,
-              fontWeight: 700,
+              fontSize: 15,
+              fontWeight: 600,
               color: 'rgba(255,255,255,0.92)',
               letterSpacing: '-0.01em',
               lineHeight: 1.2,
@@ -307,11 +291,11 @@ function SongSlot({ node, color, side, allNodes, onSelect, onPickFromMap }) {
           >
             {node.name}
           </button>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', marginTop: 4, color: `${color}aa`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, marginTop: 4, color: `${color}aa`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {node.artist}
           </div>
           {node.year && (
-            <div style={{ fontFamily: MONO, fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 2, letterSpacing: '0.08em' }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 2 }}>
               {node.year}
             </div>
           )}
@@ -329,7 +313,7 @@ function SongSlot({ node, color, side, allNodes, onSelect, onPickFromMap }) {
         }}>
           <span style={{ fontFamily: MONO, fontSize: 8, fontWeight: 700, color: '#000', lineHeight: 1 }}>{side}</span>
         </div>
-        <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.18em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase' }}>
+        <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase' }}>
           Side {side}
         </span>
       </div>
@@ -346,9 +330,9 @@ function SongSlot({ node, color, side, allNodes, onSelect, onPickFromMap }) {
               style={{
                 flex: 1, backgroundColor: 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 4, padding: '5px 8px',
-                fontFamily: MONO, fontSize: 10, color: 'rgba(255,255,255,0.75)',
-                outline: 'none', letterSpacing: '0.04em',
+                borderRadius: 8, padding: '6px 10px',
+                fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.75)',
+                outline: 'none',
               }}
             />
             <button onClick={() => { setEditing(false); setQuery(''); }}
@@ -361,8 +345,8 @@ function SongSlot({ node, color, side, allNodes, onSelect, onPickFromMap }) {
             style={{
               width: '100%', background: 'none',
               border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 4, padding: '5px 10px',
-              fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em',
+              borderRadius: 8, padding: '6px 10px',
+              fontFamily: MONO, fontSize: 10,
               color: 'rgba(255,255,255,0.35)', cursor: 'pointer',
               textAlign: 'left', marginBottom: 6,
             }}
@@ -370,7 +354,7 @@ function SongSlot({ node, color, side, allNodes, onSelect, onPickFromMap }) {
             Pick from map →
           </button>
           {results.length > 0 && (
-            <div style={{ backgroundColor: 'rgba(12,10,8,0.98)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{ backgroundColor: 'rgba(10,10,10,0.98)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden' }}>
               {results.map(n => (
                 <button
                   key={n.id}
@@ -386,8 +370,8 @@ function SongSlot({ node, color, side, allNodes, onSelect, onPickFromMap }) {
                 >
                   {n.img && <img src={n.img} alt="" style={{ width: 24, height: 24, borderRadius: 2, objectFit: 'cover', flexShrink: 0 }} />}
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontFamily: SERIF, fontSize: 11, color: 'rgba(255,255,255,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name}</div>
-                    <div style={{ fontFamily: MONO, fontSize: 9, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{n.artist}</div>
+                    <div style={{ fontFamily: SERIF, fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name}</div>
+                    <div style={{ fontFamily: MONO, fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>{n.artist}</div>
                   </div>
                 </button>
               ))}
@@ -402,7 +386,6 @@ function SongSlot({ node, color, side, allNodes, onSelect, onPickFromMap }) {
 // ── Main panel ───────────────────────────────────────────────────────────────
 
 export default function ComparePanel({ nodeA, nodeB, allNodes, allLinks, onClose, onRePickA, onRePickB, onSelectA, onSelectB }) {
-  useDesignFonts();
   useAnimStyles();
 
   const comp = computeComparison(nodeA, nodeB, allLinks);
@@ -420,13 +403,11 @@ export default function ComparePanel({ nodeA, nodeB, allNodes, allLinks, onClose
           flexDirection: 'column',
           overflow: 'hidden',
           pointerEvents: 'auto',
-          // Core panel: dark warm black, like the inside of a record crate
-          backgroundColor: '#0c0a08',
+          backgroundColor: '#0a0a0a',
           backdropFilter: 'blur(28px)',
           WebkitBackdropFilter: 'blur(28px)',
-          // Subtle warm gold border — like the pressed edge of a record sleeve
-          border: '1px solid rgba(210,185,120,0.1)',
-          borderRadius: 10,
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 16,
           boxShadow: '0 32px 80px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.04)',
           animation: 'compareRise 0.38s cubic-bezier(0.16, 1, 0.3, 1) both',
         }}
@@ -446,8 +427,8 @@ export default function ComparePanel({ nodeA, nodeB, allNodes, allLinks, onClose
               <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: COLOR_A, boxShadow: `0 0 6px ${COLOR_A}88` }} />
               <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: COLOR_B, boxShadow: `0 0 6px ${COLOR_B}88` }} />
             </div>
-            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase', color: GOLD }}>
-              Liner Notes
+            <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.04em', color: GOLD, fontWeight: 500 }}>
+              Compare
             </span>
           </div>
           <button
@@ -483,7 +464,7 @@ export default function ComparePanel({ nodeA, nodeB, allNodes, allLinks, onClose
             <div style={{
               position: 'absolute', top: '50%', left: '50%',
               transform: 'translate(-50%, -50%) rotate(90deg)',
-              fontFamily: MONO, fontSize: 7, letterSpacing: '0.3em',
+              fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em',
               color: 'rgba(255,255,255,0.08)', whiteSpace: 'nowrap', textTransform: 'uppercase',
             }}>
               vs
@@ -495,7 +476,7 @@ export default function ComparePanel({ nodeA, nodeB, allNodes, allLinks, onClose
         </div>
 
         {/* ── Scrollable body ── */}
-        <div style={{ overflowY: 'auto', flex: 1, scrollbarWidth: 'thin', scrollbarColor: 'rgba(210,185,120,0.1) transparent' }}>
+        <div style={{ overflowY: 'auto', flex: 1, scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.06) transparent' }}>
 
           {/* Direct connections */}
           {comp.directLinks.length > 0 && (
@@ -507,8 +488,8 @@ export default function ComparePanel({ nodeA, nodeB, allNodes, allLinks, onClose
                     key={i}
                     style={{
                       fontFamily: MONO,
-                      fontSize: 9, letterSpacing: '0.08em',
-                      padding: '4px 10px', borderRadius: 3,
+                      fontSize: 10,
+                      padding: '4px 12px', borderRadius: 8,
                       backgroundColor: `${LINK_COLORS[link.type] || '#fff'}15`,
                       color: LINK_COLORS[link.type] || '#fff',
                       border: `1px solid ${LINK_COLORS[link.type] || '#fff'}28`,
@@ -527,18 +508,18 @@ export default function ComparePanel({ nodeA, nodeB, allNodes, allLinks, onClose
             <div style={{ paddingTop: 14, paddingBottom: 14, ...grooveBorder }}>
               <SectionLabel>Released</SectionLabel>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 88px 1fr', gap: 12, paddingLeft: 20, paddingRight: 20, alignItems: 'center' }}>
-                <div style={{ textAlign: 'right', fontFamily: MONO, fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.04em' }}>
+                <div style={{ textAlign: 'right', fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
                   {nodeA.year ?? '—'}
                   {comp.decA && <span style={{ color: GOLD_DIM, marginLeft: 6, fontSize: 9 }}>({comp.decA})</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                  <span style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.18em', textTransform: 'uppercase', color: GOLD_DIM }}>Year</span>
+                  <span style={{ fontFamily: MONO, fontSize: 7, letterSpacing: '0.05em', textTransform: 'uppercase', color: GOLD_DIM }}>Year</span>
                   {comp.decA && comp.decA === comp.decB
                     ? <MatchBadge match="same" />
                     : <MatchBadge match={null} />
                   }
                 </div>
-                <div style={{ textAlign: 'left', fontFamily: MONO, fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.04em' }}>
+                <div style={{ textAlign: 'left', fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
                   {nodeB.year ?? '—'}
                   {comp.decB && <span style={{ color: GOLD_DIM, marginLeft: 6, fontSize: 9 }}>({comp.decB})</span>}
                 </div>

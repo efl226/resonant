@@ -2,9 +2,10 @@ const LAYOUTS = [
   {
     id: 'default',
     label: 'Default',
-    description: 'Balanced AI embedding — overall sonic + lyrical similarity',
+    description: 'Balanced AI embedding — overall sonic + lyrical similarity (2D only)',
     icon: '◎',
     color: 'rgba(255,255,255,0.5)',
+    only2d: true,
   },
   {
     id: 'sonic',
@@ -29,8 +30,12 @@ const LAYOUTS = [
   },
 ];
 
-export default function LayoutPicker({ activeLayout, onChangeLayout, hasLayouts }) {
-  if (!hasLayouts) return null;
+export default function LayoutPicker({ activeLayout, onChangeLayout, hasLayouts, hasLayouts3d, graphMode }) {
+  const show2d = graphMode !== '3d' && hasLayouts;
+  const show3d = graphMode === '3d' && hasLayouts3d;
+  if (!show2d && !show3d) return null;
+
+  const visibleLayouts = LAYOUTS.filter(l => graphMode === '3d' ? !l.only2d : true);
 
   return (
     <div
@@ -46,7 +51,7 @@ export default function LayoutPicker({ activeLayout, onChangeLayout, hasLayouts 
       <span className="text-[9px] uppercase tracking-widest text-white/25 font-bold px-1 mr-0.5">
         Layout
       </span>
-      {LAYOUTS.map(layout => {
+      {visibleLayouts.map(layout => {
         const isActive = activeLayout === layout.id;
         return (
           <button

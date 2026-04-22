@@ -53,7 +53,10 @@ def get_graph(collection: str = "default"):
                cluster_id,
                umap_sonic_x, umap_sonic_y,
                umap_vibe_x, umap_vibe_y,
-               umap_genetics_x, umap_genetics_y
+               umap_genetics_x, umap_genetics_y,
+               umap_sonic_x3, umap_sonic_y3, umap_sonic_z3,
+               umap_vibe_x3, umap_vibe_y3, umap_vibe_z3,
+               umap_genetics_x3, umap_genetics_y3, umap_genetics_z3
         FROM songs
         WHERE collection_id = %s
     """, (collection,))
@@ -113,6 +116,11 @@ def get_graph(collection: str = "default"):
                 "sonic":    {"x": row[47], "y": row[48]},
                 "vibe":     {"x": row[49], "y": row[50]},
                 "genetics": {"x": row[51], "y": row[52]},
+            },
+            "layouts3d": {
+                "sonic":    {"x": row[53], "y": row[54], "z": row[55]},
+                "vibe":     {"x": row[56], "y": row[57], "z": row[58]},
+                "genetics": {"x": row[59], "y": row[60], "z": row[61]},
             },
         })
 

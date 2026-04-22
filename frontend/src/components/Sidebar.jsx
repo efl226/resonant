@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const hexToRgb = (hex) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result 
+  return result
     ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
     : '255, 255, 255';
 };
@@ -22,14 +22,12 @@ const linkTypeConfig = {
   same_feel: { label: 'FEEL', color: '#8B9FE8', icon: '∿' },
 };
 
-// Dispatch a custom event that SearchBar listens for
 const addFilter = (key, value) => {
   window.dispatchEvent(new CustomEvent('resonant-add-filter', {
     detail: { key, value }
   }));
 };
 
-// Clickable filter tag component
 const FilterTag = ({ label, filterKey, filterValue, color, className = "" }) => {
   if (!filterValue) return null;
   return (
@@ -43,12 +41,10 @@ const FilterTag = ({ label, filterKey, filterValue, color, className = "" }) => 
       title={`Filter by ${label || filterKey}: ${filterValue}`}
     >
       {filterValue}
-      <span className="ml-1 opacity-0 group-hover:opacity-50 text-[9px]">+</span>
     </span>
   );
 };
 
-// Clickable pill for instruments, moods, etc.
 const FilterPill = ({ value, filterKey, accentRgb }) => {
   return (
     <span
@@ -69,50 +65,168 @@ const FilterPill = ({ value, filterKey, accentRgb }) => {
   );
 };
 
+const SIDEBAR_WIDTH = 420;
+const COLLAPSED_WIDTH = 48;
+
 const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
   const [showLyrics, setShowLyrics] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Reset to expanded whenever a new node is selected
+  useEffect(() => {
+    setCollapsed(false);
+    setShowLyrics(false);
+  }, [node?.id]);
 
   if (!node) return null;
 
   const accent = node.visual_dna?.primary_color || '#ffffff';
   const accentRgb = hexToRgb(accent);
-  const [ar, ag, ab] = accentRgb.split(',').map(Number);
-  const brightness = (ar * 299 + ag * 587 + ab * 114) / 1000;
   const palette = node.visual_dna?.palette || [];
-
   const musicianCredits = node.genetic_dna?.musician_credits || {};
   const samplesFrom = node.genetic_dna?.samples_from || [];
   const songwriter = node.genetic_dna?.songwriter || [];
   const mood = node.semantic_dna?.mood || [];
 
+  const shellStyle = {
+    position: 'fixed',
+    top: 0,
+    right: 0,
+    height: '100%',
+    zIndex: 50,
+    backgroundColor: 'rgba(10,10,10,0.97)',
+    backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
+    borderLeft: `1px solid rgba(${accentRgb}, 0.18)`,
+    boxShadow: `-20px 0 60px rgba(${accentRgb}, 0.06), -4px 0 24px rgba(0,0,0,0.8)`,
+    width: collapsed ? COLLAPSED_WIDTH : SIDEBAR_WIDTH,
+    transition: 'width 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+    overflow: 'hidden',
+  };
+
+  // ── Collapsed strip ──────────────────────────────────────────────────────────
+  if (collapsed) {
+    return (
+      <div style={shellStyle}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', paddingTop: 12, gap: 12 }}>
+          {/* Expand button */}
+          <button
+            onClick={() => setCollapsed(false)}
+            style={{
+              width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+              color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 13, flexShrink: 0,
+              transition: 'background 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
+            title="Expand sidebar"
+          >
+            ‹
+          </button>
+
+          {/* Album art thumbnail */}
+          {node.img && (
+            <img
+              src={node.img}
+              alt=""
+              onClick={() => setCollapsed(false)}
+              style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4, flexShrink: 0, cursor: 'pointer', boxShadow: `0 0 0 1px rgba(${accentRgb}, 0.3)` }}
+            />
+          )}
+
+          {/* Accent dot */}
+          <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: accent, boxShadow: `0 0 8px ${accent}88`, flexShrink: 0 }} />
+
+          {/* Song name rotated */}
+          <div
+            onClick={() => setCollapsed(false)}
+            style={{
+              writingMode: 'vertical-rl',
+              transform: 'rotate(180deg)',
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.55)',
+              cursor: 'pointer',
+              overflow: 'hidden',
+              maxHeight: 200,
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              letterSpacing: '0.02em',
+              userSelect: 'none',
+            }}
+            title={node.name}
+          >
+            {node.name}
+          </div>
+
+          {/* Close button at bottom */}
+          <button
+            onClick={onClose}
+            style={{
+              marginTop: 'auto', marginBottom: 16,
+              width: 28, height: 28, borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: '1px solid rgba(255,255,255,0.07)',
+              color: 'rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: 16,
+              transition: 'color 0.15s, border-color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.2)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
+            title="Close"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Expanded sidebar ─────────────────────────────────────────────────────────
   return (
-    <div 
-      className="fixed top-0 right-0 w-[420px] h-full bg-neutral-950/95 text-white z-50 overflow-y-auto backdrop-blur-2xl"
-      style={{
-        borderLeft: `1px solid rgba(${accentRgb}, 0.2)`,
-        boxShadow: `-20px 0 60px rgba(${accentRgb}, 0.08), -5px 0 30px rgba(0,0,0,0.8)`,
-      }}
-    >
-      
-      <button 
-        onClick={onClose} 
-        className="absolute top-6 right-6 text-2xl z-10 hover:opacity-100 transition-opacity"
-        style={{ color: `rgba(${accentRgb}, 0.5)` }}
-      >
-        ×
-      </button>
+    <div style={{ ...shellStyle, overflowY: 'auto' }}>
+
+      {/* Top controls */}
+      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', alignItems: 'center', gap: 8, zIndex: 10 }}>
+        {/* Collapse button */}
+        <button
+          onClick={() => setCollapsed(true)}
+          style={{
+            width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+            color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 14,
+            transition: 'background 0.15s, color 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; }}
+          title="Collapse sidebar"
+        >
+          ›
+        </button>
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          style={{
+            width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+            color: `rgba(${accentRgb}, 0.45)`, cursor: 'pointer', fontSize: 18,
+            transition: 'background 0.15s, color 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = `rgba(${accentRgb}, 0.9)`; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = `rgba(${accentRgb}, 0.45)`; }}
+          title="Close"
+        >
+          ×
+        </button>
+      </div>
 
       {/* HERO */}
       <div className="relative">
         <img src={node.img} alt="cover" className="w-full" />
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `linear-gradient(to bottom, 
-              transparent 30%, 
-              rgba(${accentRgb}, 0.15) 60%, 
-              rgb(10, 10, 10) 100%
-            )`,
+            background: `linear-gradient(to bottom, transparent 30%, rgba(${accentRgb}, 0.15) 60%, rgb(10, 10, 10) 100%)`,
           }}
         />
       </div>
@@ -121,7 +235,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
 
         {/* HEADER */}
         <h1 className="text-3xl font-bold tracking-tight mb-1">{node.name}</h1>
-        <h2 
+        <h2
           className="text-lg mb-1 cursor-pointer hover:opacity-80 transition-opacity"
           style={{ color: `rgba(${accentRgb}, 0.7)` }}
           onClick={() => addFilter('artist', node.artist)}
@@ -133,13 +247,13 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
           {node.album && <span className="italic">{node.album}</span>}
           {node.album && node.year && <span> • </span>}
           {node.year && (
-            <span 
+            <span
               className="cursor-pointer hover:text-white/50 transition-colors"
               onClick={() => {
                 const decade = `${Math.floor(node.year / 10) * 10}s`;
                 addFilter('decade', decade);
               }}
-              title={`Filter by decade`}
+              title="Filter by decade"
             >
               {node.year}
             </span>
@@ -147,7 +261,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
           {node.genetic_dna?.label && (
             <>
               <span> • </span>
-              <span 
+              <span
                 className="cursor-pointer hover:text-white/50 transition-colors"
                 onClick={() => addFilter('label', node.genetic_dna.label)}
                 title={`Filter by label: ${node.genetic_dna.label}`}
@@ -166,7 +280,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             </span>
           )}
           {node.sonic_dna?.key && (
-            <span 
+            <span
               className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors"
               onClick={() => addFilter('key', node.sonic_dna.key)}
               title={`Filter by key: ${node.sonic_dna.key}`}
@@ -185,19 +299,19 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             </span>
           )}
           {node.sonic_dna?.vocal_type && (
-            <span 
+            <span
               className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors"
               onClick={() => addFilter('vocal_type', node.sonic_dna.vocal_type)}
-              title={`Filter by vocal type`}
+              title="Filter by vocal type"
             >
               {node.sonic_dna.vocal_type}
             </span>
           )}
           {node.sonic_dna?.mode && (
-            <span 
+            <span
               className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors"
               onClick={() => addFilter('mode', node.sonic_dna.mode)}
-              title={`Filter by mode`}
+              title="Filter by mode"
             >
               {node.sonic_dna.mode}
             </span>
@@ -228,7 +342,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
 
           {/* FUN FACT */}
           {node.semantic_dna?.fun_fact && (
-            <div 
+            <div
               className="p-4 rounded-lg text-sm leading-relaxed"
               style={{
                 backgroundColor: `rgba(${accentRgb}, 0.06)`,
@@ -240,11 +354,11 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             </div>
           )}
 
-          {/* MOOD & THEMES — clickable */}
+          {/* MOOD & THEMES */}
           <section>
             <div className="flex flex-wrap gap-2 mb-3">
               {mood.map((m, i) => (
-                <span 
+                <span
                   key={i}
                   onClick={() => addFilter('mood', m)}
                   className="px-3 py-1 rounded-full text-xs font-medium cursor-pointer hover:scale-105 transition-all"
@@ -259,7 +373,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                 </span>
               ))}
               {(node.semantic_dna?.themes || []).map((tag, i) => (
-                <span 
+                <span
                   key={`t-${i}`}
                   onClick={() => addFilter('themes', tag)}
                   className="px-3 py-1 rounded-full text-xs cursor-pointer hover:scale-105 transition-all"
@@ -291,13 +405,13 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
               </h3>
               <div className="space-y-2">
                 {samplesFrom.map((sample, i) => (
-                  <div 
-                    key={i} 
+                  <div
+                    key={i}
                     className="p-3 rounded-lg text-xs"
                     style={{ backgroundColor: 'rgba(232, 114, 74, 0.08)', border: '1px solid rgba(232, 114, 74, 0.15)' }}
                   >
                     <span className="text-white/80 font-medium">{sample.sampled_song}</span>
-                    <span 
+                    <span
                       className="text-white/40 cursor-pointer hover:text-white/60 transition-colors"
                       onClick={() => addFilter('artist', sample.sampled_artist)}
                     > by {sample.sampled_artist}</span>
@@ -310,7 +424,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             </section>
           )}
 
-          {/* INSTRUMENTS — clickable */}
+          {/* INSTRUMENTS */}
           {node.sonic_dna?.prominent_instruments?.length > 0 && (
             <section>
               <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
@@ -324,7 +438,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             </section>
           )}
 
-          {/* MUSICIAN CREDITS — clickable names */}
+          {/* MUSICIAN CREDITS */}
           {Object.keys(musicianCredits).length > 0 && (
             <section>
               <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
@@ -334,7 +448,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                 {Object.entries(musicianCredits).map(([name, role], i) => (
                   <div key={i} className="flex justify-between text-xs py-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <span className="text-white/70">{name}</span>
-                    <span 
+                    <span
                       className="text-white/30 italic cursor-pointer hover:text-white/50 transition-colors"
                       onClick={() => addFilter('instruments', role)}
                       title={`Filter by instrument: ${role}`}
@@ -347,7 +461,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             </section>
           )}
 
-          {/* PRODUCTION — clickable */}
+          {/* PRODUCTION */}
           <section>
             <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
               Production
@@ -356,7 +470,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
               {node.genetic_dna?.producer && (
                 <div className="group">
                   <div className="text-white/30 mb-0.5">PRODUCER</div>
-                  <div 
+                  <div
                     className="text-white/80 cursor-pointer hover:text-white transition-colors"
                     onClick={() => addFilter('producer', node.genetic_dna.producer)}
                     title={`Filter by producer: ${node.genetic_dna.producer}`}
@@ -378,7 +492,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                     {songwriter.map((sw, i) => (
                       <span key={i}>
                         {i > 0 && ', '}
-                        <span 
+                        <span
                           className="cursor-pointer hover:text-white transition-colors"
                           onClick={() => addFilter('artist', sw)}
                           title={`Search for: ${sw}`}
@@ -393,7 +507,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
               {node.genetic_dna?.label && (
                 <div>
                   <div className="text-white/30 mb-0.5">LABEL</div>
-                  <div 
+                  <div
                     className="text-white/80 cursor-pointer hover:text-white transition-colors"
                     onClick={() => addFilter('label', node.genetic_dna.label)}
                     title={`Filter by label: ${node.genetic_dna.label}`}
@@ -425,12 +539,12 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                       <span className="text-white/50">{node.sonic_dna.energy_shape || ''}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                      <div 
+                      <div
                         className="h-full rounded-full transition-all"
-                        style={{ 
+                        style={{
                           width: `${(node.sonic_dna.energy || 0) * 100}%`,
                           backgroundColor: `rgba(${accentRgb}, 0.6)`,
-                        }} 
+                        }}
                       />
                     </div>
                   </div>
@@ -445,12 +559,12 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                       <div key={i}>
                         <div className="text-[10px] text-white/25 mb-1">{band.label}</div>
                         <div className="h-1 rounded-full bg-white/5 overflow-hidden">
-                          <div 
+                          <div
                             className="h-full rounded-full"
-                            style={{ 
+                            style={{
                               width: `${(band.value || 0) * 100}%`,
                               backgroundColor: `rgba(${accentRgb}, 0.4)`,
-                            }} 
+                            }}
                           />
                         </div>
                       </div>
@@ -458,7 +572,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                   </div>
                 )}
                 {node.sonic_dna?.rhythm_feel && node.sonic_dna.rhythm_feel !== 'straight' && (
-                  <div 
+                  <div
                     className="text-xs text-white/40 cursor-pointer hover:text-white/60 transition-colors"
                     onClick={() => addFilter('rhythm_feel', node.sonic_dna.rhythm_feel)}
                   >
@@ -480,8 +594,9 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                 Lyrics {showLyrics ? '▾' : '▸'}
               </button>
               {showLyrics && node.lyrics_preview && (
-                <pre className="text-xs text-white/30 leading-relaxed whitespace-pre-wrap font-sans max-h-[200px] overflow-y-auto"
-                  style={{ 
+                <pre
+                  className="text-xs text-white/30 leading-relaxed whitespace-pre-wrap font-sans max-h-[200px] overflow-y-auto"
+                  style={{
                     scrollbarWidth: 'thin',
                     scrollbarColor: `rgba(${accentRgb}, 0.2) transparent`,
                   }}
@@ -491,7 +606,6 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
               )}
             </section>
           )}
-
 
         </div>
       </div>
