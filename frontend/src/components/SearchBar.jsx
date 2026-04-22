@@ -355,9 +355,9 @@ const SearchBar = ({ data, onSelect, onSearchResults, onReset, searchActive }) =
   }
 
   return (
-    <div id="search-container" className="top-5 left-5 z-10 w-[420px]">
+    <div id="search-container" className="relative z-10 w-full">
       {/* Search input + reset */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 px-1">
         <div className="relative flex-1">
           <input
             ref={inputRef}
@@ -367,12 +367,15 @@ const SearchBar = ({ data, onSelect, onSearchResults, onReset, searchActive }) =
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onFocus={() => results.length > 0 && setShowResults(true)}
-            className="w-full bg-white/[0.06] border border-white/10 text-white px-5 py-3 rounded-full backdrop-blur-md outline-none focus:border-white/30 shadow-2xl transition-all text-sm"
-            style={isFiltered ? { borderColor: 'rgba(74, 158, 232, 0.4)' } : {}}
+            className="w-full bg-transparent text-white px-4 py-2 rounded-lg outline-none transition-all text-[11px] font-medium"
+            style={{
+              border: isFiltered ? '1px solid rgba(74,158,232,0.35)' : '1px solid rgba(255,255,255,0.07)',
+              color: 'rgba(255,255,255,0.85)',
+            }}
           />
           {loading && (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-              <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="w-3 h-3 border border-white/20 border-t-white/60 rounded-full animate-spin" />
             </div>
           )}
         </div>
@@ -380,7 +383,8 @@ const SearchBar = ({ data, onSelect, onSearchResults, onReset, searchActive }) =
         {isFiltered && (
           <button
             onClick={handleReset}
-            className="bg-white/10 hover:bg-white/20 text-white/60 hover:text-white px-4 py-3 rounded-full transition-all text-sm flex-shrink-0 backdrop-blur-md border border-white/10"
+            className="text-white/50 hover:text-white/80 transition-colors text-[11px] font-medium flex-shrink-0 px-3 py-2 rounded-lg"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', whiteSpace: 'nowrap' }}
             title="Reset to full graph (Esc)"
           >
             ✕ Reset
@@ -445,7 +449,7 @@ const SearchBar = ({ data, onSelect, onSearchResults, onReset, searchActive }) =
 
       {/* Results dropdown */}
       {showResults && results.length > 0 && (
-        <div className="mt-2 bg-black/95 border border-white/10 rounded-xl overflow-hidden backdrop-blur-xl shadow-2xl">
+        <div className="mt-2 bg-black/95 border border-white/10 rounded-xl overflow-hidden backdrop-blur-xl shadow-2xl" style={{ position: 'absolute', left: 4, right: 4, zIndex: 60 }}>
           
           {searchType && searchType !== 'text' && (
             <div className="px-4 py-2 border-b border-white/5 flex items-center gap-2">

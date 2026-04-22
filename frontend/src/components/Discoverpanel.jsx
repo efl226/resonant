@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 
-const DiscoverPanel = ({ graphData, onNavigate, onFilter }) => {
+const DiscoverPanel = ({ graphData, onNavigate, onFilter, inRail }) => {
   const [open, setOpen] = useState(false);
 
   // Compute discoveries from graph data
@@ -144,20 +144,27 @@ const DiscoverPanel = ({ graphData, onNavigate, onFilter }) => {
 
   return (
     <>
-      {/* Floating button */}
+      {/* Trigger button */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-5 py-3 rounded-full backdrop-blur-md transition-all hover:scale-105 active:scale-95 shadow-2xl"
         style={{
-          backgroundColor: open ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
-          border: open ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(255,255,255,0.08)',
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '6px 12px',
+          borderRadius: 8,
+          backgroundColor: open ? 'rgba(255,255,255,0.09)' : 'transparent',
+          border: open ? '1px solid rgba(255,255,255,0.14)' : '1px solid transparent',
+          cursor: 'pointer',
+          transition: 'background 0.15s, border-color 0.15s',
+          flexShrink: 0,
         }}
+        onMouseEnter={e => { if (!open) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
+        onMouseLeave={e => { if (!open) e.currentTarget.style.backgroundColor = 'transparent'; }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/70">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'rgba(255,255,255,0.6)', flexShrink: 0 }}>
           <circle cx="12" cy="12" r="10"/>
           <path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/>
         </svg>
-        <span className="text-sm text-white/70 font-medium">Discover</span>
+        <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 11, fontWeight: 500, color: open ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>Discover</span>
       </button>
 
       {/* Panel */}
