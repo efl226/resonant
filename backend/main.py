@@ -236,31 +236,59 @@ def get_graph(collection: str = "default"):
         nodes = _build_nodes(cur.fetchall(), has_new_layout_cols=True)
     except Exception:
         conn.rollback()
-        # Migration hasn't run yet — fall back to legacy genetics columns
-        cur.execute("""
-            SELECT id, name, artist, album, year, img,
-                   bpm, key, energy, duration, prominent_instruments,
-                   producer, mixing_engineer, studio, songwriter, featuring, label,
-                   primary_color, palette, texture,
-                   mood, themes, ai_summary,
-                   umap_x, umap_y,
-                   scale, mode, time_signature, key_changes, key_changes_detail,
-                   energy_shape, bass_weight, mid_weight, treble_weight,
-                   vocal_type, rhythm_feel,
-                   country_recorded, conductor, musician_credits, samples_from,
-                   fun_fact, sonic_fingerprint,
-                   lyrics, lyrics_source,
-                   is_live, spotify_uri,
-                   cluster_id,
-                   umap_sonic_x, umap_sonic_y,
-                   umap_vibe_x, umap_vibe_y,
-                   umap_genetics_x, umap_genetics_y,
-                   umap_sonic_x3, umap_sonic_y3, umap_sonic_z3,
-                   umap_vibe_x3, umap_vibe_y3, umap_vibe_z3,
-                   umap_genetics_x3, umap_genetics_y3, umap_genetics_z3
-            FROM songs WHERE collection_id = %s
-        """, (collection,))
-        nodes = _build_nodes(cur.fetchall(), has_new_layout_cols=False)
+        try:
+            # Level 2: legacy genetics layout columns, no isrc/mb_credits
+            cur.execute("""
+                SELECT id, name, artist, album, year, img,
+                       bpm, key, energy, duration, prominent_instruments,
+                       producer, mixing_engineer, studio, songwriter, featuring, label,
+                       primary_color, palette, texture,
+                       mood, themes, ai_summary,
+                       umap_x, umap_y,
+                       scale, mode, time_signature, key_changes, key_changes_detail,
+                       energy_shape, bass_weight, mid_weight, treble_weight,
+                       vocal_type, rhythm_feel,
+                       country_recorded, conductor, musician_credits, samples_from,
+                       fun_fact, sonic_fingerprint,
+                       lyrics, lyrics_source,
+                       is_live, spotify_uri,
+                       cluster_id,
+                       umap_sonic_x, umap_sonic_y,
+                       umap_vibe_x, umap_vibe_y,
+                       umap_genetics_x, umap_genetics_y,
+                       umap_sonic_x3, umap_sonic_y3, umap_sonic_z3,
+                       umap_vibe_x3, umap_vibe_y3, umap_vibe_z3,
+                       umap_genetics_x3, umap_genetics_y3, umap_genetics_z3
+                FROM songs WHERE collection_id = %s
+            """, (collection,))
+            nodes = _build_nodes(cur.fetchall(), has_new_layout_cols=False)
+        except Exception:
+            conn.rollback()
+            # Level 3: minimal — only umap_x/umap_y exist, repeat them for all layout slots
+            cur.execute("""
+                SELECT id, name, artist, album, year, img,
+                       bpm, key, energy, duration, prominent_instruments,
+                       producer, mixing_engineer, studio, songwriter, featuring, label,
+                       primary_color, palette, texture,
+                       mood, themes, ai_summary,
+                       umap_x, umap_y,
+                       scale, mode, time_signature, key_changes, key_changes_detail,
+                       energy_shape, bass_weight, mid_weight, treble_weight,
+                       vocal_type, rhythm_feel,
+                       country_recorded, conductor, musician_credits, samples_from,
+                       fun_fact, sonic_fingerprint,
+                       lyrics, lyrics_source,
+                       is_live, spotify_uri,
+                       cluster_id,
+                       umap_x, umap_y,
+                       umap_x, umap_y,
+                       umap_x, umap_y,
+                       umap_x, umap_y, NULL::float,
+                       umap_x, umap_y, NULL::float,
+                       umap_x, umap_y, NULL::float
+                FROM songs WHERE collection_id = %s
+            """, (collection,))
+            nodes = _build_nodes(cur.fetchall(), has_new_layout_cols=False)
 
     song_ids = [n["id"] for n in nodes]
     if song_ids:
