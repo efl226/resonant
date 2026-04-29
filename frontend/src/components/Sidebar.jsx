@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { saveEdits as apiSaveEdits } from '../api/client';
 
 const hexToRgb = (hex) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -28,23 +29,6 @@ const addFilter = (key, value) => {
   }));
 };
 
-const FilterTag = ({ label, filterKey, filterValue, color, className = "" }) => {
-  if (!filterValue) return null;
-  return (
-    <span
-      onClick={(e) => {
-        e.stopPropagation();
-        addFilter(filterKey, filterValue);
-      }}
-      className={`cursor-pointer hover:opacity-80 transition-opacity ${className}`}
-      style={{ color: color || undefined }}
-      title={`Filter by ${label || filterKey}: ${filterValue}`}
-    >
-      {filterValue}
-    </span>
-  );
-};
-
 const FilterPill = ({ value, filterKey, accentRgb }) => {
   return (
     <span
@@ -65,17 +49,86 @@ const FilterPill = ({ value, filterKey, accentRgb }) => {
   );
 };
 
+// Defined outside Sidebar so React gets a stable component type reference (avoids remount on each render)
+const ArrayTag = ({ item, idx, field, aiArr, filterKey, filterValue, editMode, onRemove, tagStyle, textStyle }) => (
+  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs" style={tagStyle}>
+    <span
+      className={editMode ? '' : 'cursor-pointer hover:opacity-80'}
+      onClick={editMode ? undefined : () => addFilter(filterKey, filterValue ?? item)}
+      title={editMode ? undefined : `Filter by ${filterKey}: ${filterValue ?? item}`}
+      style={textStyle}
+    >{item}</span>
+    {editMode && (
+      <button
+        onClick={() => onRemove(field, aiArr, idx)}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', fontSize: 13, padding: 0, lineHeight: 1, flexShrink: 0 }}
+        onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
+      >×</button>
+    )}
+  </span>
+);
+
+const AddTagInput = ({ value, onChangeVal, onAdd, placeholder }) => (
+  <input
+    value={value || ''}
+    onChange={e => onChangeVal(e.target.value)}
+    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onAdd(); } }}
+    placeholder={placeholder || '+ add'}
+    style={addTagInputStyle}
+  />
+);
+
 const SIDEBAR_WIDTH = 420;
 const COLLAPSED_WIDTH = 48;
+
+const editInputStyle = {
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 4,
+  color: 'rgba(255,255,255,0.8)',
+  fontSize: 12,
+  padding: '3px 7px',
+  outline: 'none',
+  width: '100%',
+  fontFamily: 'Inter, system-ui, sans-serif',
+};
+
+const addTagInputStyle = {
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px dashed rgba(255,255,255,0.15)',
+  borderRadius: 20,
+  color: 'rgba(255,255,255,0.5)',
+  fontSize: 11,
+  padding: '3px 10px',
+  outline: 'none',
+  width: 80,
+  fontFamily: 'Inter, system-ui, sans-serif',
+};
 
 const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
   const [showLyrics, setShowLyrics] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [localEdits, setLocalEdits] = useState({});
+  const [localNotes, setLocalNotes] = useState('');
+  const [addingValues, setAddingValues] = useState({});
+  const saveTimerRef = useRef(null);
+  const editsCacheRef = useRef({});
 
-  // Reset to expanded whenever a new node is selected
   useEffect(() => {
     setCollapsed(false);
     setShowLyrics(false);
+    setEditMode(false);
+    setAddingValues({});
+    const cached = editsCacheRef.current[node?.id];
+    if (cached) {
+      setLocalEdits(cached.edits);
+      setLocalNotes(cached.notes);
+    } else {
+      setLocalEdits(node?.user_edits || {});
+      setLocalNotes(node?.user_notes || '');
+    }
   }, [node?.id]);
 
   if (!node) return null;
@@ -85,8 +138,52 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
   const palette = node.visual_dna?.palette || [];
   const musicianCredits = node.genetic_dna?.musician_credits || {};
   const samplesFrom = node.genetic_dna?.samples_from || [];
-  const songwriter = node.genetic_dna?.songwriter || [];
-  const mood = node.semantic_dna?.mood || [];
+
+  // Derived values: user_edits take precedence over AI values
+  const ed = localEdits;
+  const mood = ed.mood ?? (node.semantic_dna?.mood || []);
+  const themes = ed.themes ?? (node.semantic_dna?.themes || []);
+  const instruments = ed.prominent_instruments ?? (node.sonic_dna?.prominent_instruments || []);
+  const songwriterList = ed.songwriter ?? (node.genetic_dna?.songwriter || []);
+  const aiSummary = 'ai_summary' in ed ? ed.ai_summary : node.semantic_dna?.ai_summary;
+  const funFact = 'fun_fact' in ed ? ed.fun_fact : node.semantic_dna?.fun_fact;
+  const producer = 'producer' in ed ? ed.producer : node.genetic_dna?.producer;
+  const mixEngineer = 'mixing_engineer' in ed ? ed.mixing_engineer : node.genetic_dna?.mixing_engineer;
+  const labelVal = 'label' in ed ? ed.label : node.genetic_dna?.label;
+  const studioVal = 'studio' in ed ? ed.studio : node.genetic_dna?.studio;
+
+  const debounceSave = (edits, notes) => {
+    clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      apiSaveEdits(node.id, { edits, notes }).catch(console.warn);
+    }, 600);
+  };
+
+  const setField = (field, value) => {
+    const next = { ...localEdits, [field]: value };
+    setLocalEdits(next);
+    editsCacheRef.current[node.id] = { edits: next, notes: localNotes };
+    debounceSave(next, localNotes);
+  };
+
+  const setNotes = (val) => {
+    setLocalNotes(val);
+    editsCacheRef.current[node.id] = { edits: localEdits, notes: val };
+    debounceSave(localEdits, val);
+  };
+
+  const removeArrayItem = (field, aiArr, idx) => {
+    const current = (field in localEdits ? localEdits[field] : aiArr) || [];
+    setField(field, current.filter((_, i) => i !== idx));
+  };
+
+  const addArrayItem = (field, aiArr) => {
+    const val = (addingValues[field] || '').trim();
+    if (!val) return;
+    const current = (field in localEdits ? localEdits[field] : aiArr) || [];
+    setField(field, [...current, val]);
+    setAddingValues(prev => ({ ...prev, [field]: '' }));
+  };
 
   const shellStyle = {
     position: 'fixed',
@@ -104,12 +201,11 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
     overflow: 'hidden',
   };
 
-  // ── Collapsed strip ──────────────────────────────────────────────────────────
+  // ── Collapsed strip ────────────────────────────────────────────────────────
   if (collapsed) {
     return (
       <div style={shellStyle}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', paddingTop: 12, gap: 12 }}>
-          {/* Expand button */}
           <button
             onClick={() => setCollapsed(false)}
             style={{
@@ -121,11 +217,8 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
             title="Expand sidebar"
-          >
-            ‹
-          </button>
+          >‹</button>
 
-          {/* Album art thumbnail */}
           {node.img && (
             <img
               src={node.img}
@@ -135,32 +228,20 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             />
           )}
 
-          {/* Accent dot */}
           <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: accent, boxShadow: `0 0 8px ${accent}88`, flexShrink: 0 }} />
 
-          {/* Song name rotated */}
           <div
             onClick={() => setCollapsed(false)}
             style={{
-              writingMode: 'vertical-rl',
-              transform: 'rotate(180deg)',
-              fontSize: 11,
-              fontWeight: 600,
-              color: 'rgba(255,255,255,0.55)',
-              cursor: 'pointer',
-              overflow: 'hidden',
-              maxHeight: 200,
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              letterSpacing: '0.02em',
-              userSelect: 'none',
+              writingMode: 'vertical-rl', transform: 'rotate(180deg)',
+              fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.55)',
+              cursor: 'pointer', overflow: 'hidden', maxHeight: 200,
+              textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              letterSpacing: '0.02em', userSelect: 'none',
             }}
             title={node.name}
-          >
-            {node.name}
-          </div>
+          >{node.name}</div>
 
-          {/* Close button at bottom */}
           <button
             onClick={onClose}
             style={{
@@ -174,21 +255,35 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
             onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.2)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
             title="Close"
-          >
-            ×
-          </button>
+          >×</button>
         </div>
       </div>
     );
   }
 
-  // ── Expanded sidebar ─────────────────────────────────────────────────────────
+  // ── Expanded sidebar ───────────────────────────────────────────────────────
   return (
     <div style={{ ...shellStyle, overflowY: 'auto' }}>
 
       {/* Top controls */}
       <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', alignItems: 'center', gap: 8, zIndex: 10 }}>
-        {/* Collapse button */}
+        {/* Edit toggle */}
+        <button
+          onClick={() => setEditMode(m => !m)}
+          style={{
+            width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: editMode ? `rgba(${accentRgb}, 0.12)` : 'rgba(255,255,255,0.04)',
+            border: editMode ? `1px solid rgba(${accentRgb}, 0.35)` : '1px solid rgba(255,255,255,0.07)',
+            color: editMode ? `rgba(${accentRgb}, 0.9)` : 'rgba(255,255,255,0.3)',
+            cursor: 'pointer', fontSize: 13,
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { if (!editMode) { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; } }}
+          onMouseLeave={e => { if (!editMode) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; } }}
+          title={editMode ? 'Done editing' : 'Edit this song\'s info'}
+        >{editMode ? '✓' : '✎'}</button>
+
+        {/* Collapse */}
         <button
           onClick={() => setCollapsed(true)}
           style={{
@@ -200,10 +295,9 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; }}
           title="Collapse sidebar"
-        >
-          ›
-        </button>
-        {/* Close button */}
+        >›</button>
+
+        {/* Close */}
         <button
           onClick={onClose}
           style={{
@@ -215,9 +309,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = `rgba(${accentRgb}, 0.9)`; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = `rgba(${accentRgb}, 0.45)`; }}
           title="Close"
-        >
-          ×
-        </button>
+        >×</button>
       </div>
 
       {/* HERO */}
@@ -225,9 +317,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
         <img src={node.img} alt="cover" className="w-full" />
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `linear-gradient(to bottom, transparent 30%, rgba(${accentRgb}, 0.15) 60%, rgb(10, 10, 10) 100%)`,
-          }}
+          style={{ background: `linear-gradient(to bottom, transparent 30%, rgba(${accentRgb}, 0.15) 60%, rgb(10, 10, 10) 100%)` }}
         />
       </div>
 
@@ -240,34 +330,25 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
           style={{ color: `rgba(${accentRgb}, 0.7)` }}
           onClick={() => addFilter('artist', node.artist)}
           title={`Filter by artist: ${node.artist}`}
-        >
-          {node.artist}
-        </h2>
+        >{node.artist}</h2>
         <div className="text-sm text-white/25 mb-2">
           {node.album && <span className="italic">{node.album}</span>}
           {node.album && node.year && <span> • </span>}
           {node.year && (
             <span
               className="cursor-pointer hover:text-white/50 transition-colors"
-              onClick={() => {
-                const decade = `${Math.floor(node.year / 10) * 10}s`;
-                addFilter('decade', decade);
-              }}
+              onClick={() => addFilter('decade', `${Math.floor(node.year / 10) * 10}s`)}
               title="Filter by decade"
-            >
-              {node.year}
-            </span>
+            >{node.year}</span>
           )}
-          {node.genetic_dna?.label && (
+          {labelVal && (
             <>
               <span> • </span>
               <span
-                className="cursor-pointer hover:text-white/50 transition-colors"
-                onClick={() => addFilter('label', node.genetic_dna.label)}
-                title={`Filter by label: ${node.genetic_dna.label}`}
-              >
-                {node.genetic_dna.label}
-              </span>
+                className={editMode ? '' : 'cursor-pointer hover:text-white/50 transition-colors'}
+                onClick={editMode ? undefined : () => addFilter('label', labelVal)}
+                title={editMode ? undefined : `Filter by label: ${labelVal}`}
+              >{labelVal}</span>
             </>
           )}
         </div>
@@ -275,46 +356,22 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
         {/* Quick stats row */}
         <div className="flex gap-3 mb-6 flex-wrap">
           {node.sonic_dna?.bpm && (
-            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">
-              {node.sonic_dna.bpm} BPM
-            </span>
+            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">{node.sonic_dna.bpm} BPM</span>
           )}
           {node.sonic_dna?.key && (
-            <span
-              className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors"
-              onClick={() => addFilter('key', node.sonic_dna.key)}
-              title={`Filter by key: ${node.sonic_dna.key}`}
-            >
-              {node.sonic_dna.key}
-            </span>
+            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => addFilter('key', node.sonic_dna.key)}>{node.sonic_dna.key}</span>
           )}
           {node.sonic_dna?.time_signature && (
-            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">
-              {node.sonic_dna.time_signature}
-            </span>
+            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">{node.sonic_dna.time_signature}</span>
           )}
           {node.sonic_dna?.duration && (
-            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">
-              {node.sonic_dna.duration}
-            </span>
+            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50">{node.sonic_dna.duration}</span>
           )}
           {node.sonic_dna?.vocal_type && (
-            <span
-              className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors"
-              onClick={() => addFilter('vocal_type', node.sonic_dna.vocal_type)}
-              title="Filter by vocal type"
-            >
-              {node.sonic_dna.vocal_type}
-            </span>
+            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => addFilter('vocal_type', node.sonic_dna.vocal_type)}>{node.sonic_dna.vocal_type}</span>
           )}
           {node.sonic_dna?.mode && (
-            <span
-              className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors"
-              onClick={() => addFilter('mode', node.sonic_dna.mode)}
-              title="Filter by mode"
-            >
-              {node.sonic_dna.mode}
-            </span>
+            <span className="px-2 py-1 rounded text-[11px] bg-white/5 text-white/50 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => addFilter('mode', node.sonic_dna.mode)}>{node.sonic_dna.mode}</span>
           )}
         </div>
 
@@ -324,9 +381,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             onClick={() => onPlay(node)}
             className="flex items-center gap-2 px-4 py-2 rounded-full text-sm mb-4 transition-all hover:scale-105 active:scale-95"
             style={{ backgroundColor: '#1DB954', color: 'white' }}
-          >
-            ▶ Play this song
-          </button>
+          >▶ Play this song</button>
         )}
 
         <div className="space-y-6">
@@ -341,16 +396,23 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
           )}
 
           {/* FUN FACT */}
-          {node.semantic_dna?.fun_fact && (
+          {(funFact || editMode) && (
             <div
               className="p-4 rounded-lg text-sm leading-relaxed"
-              style={{
-                backgroundColor: `rgba(${accentRgb}, 0.06)`,
-                borderLeft: `3px solid rgba(${accentRgb}, 0.4)`,
-              }}
+              style={{ backgroundColor: `rgba(${accentRgb}, 0.06)`, borderLeft: `3px solid rgba(${accentRgb}, 0.4)` }}
             >
               <span className="text-[10px] uppercase tracking-wider text-white/30 block mb-2">Did you know?</span>
-              <span className="text-white/70">{node.semantic_dna.fun_fact}</span>
+              {editMode ? (
+                <textarea
+                  value={funFact || ''}
+                  onChange={e => setField('fun_fact', e.target.value)}
+                  placeholder="Add a fun fact..."
+                  rows={3}
+                  style={{ ...editInputStyle, resize: 'vertical', lineHeight: 1.6 }}
+                />
+              ) : (
+                <span className="text-white/70">{funFact}</span>
+              )}
             </div>
           )}
 
@@ -358,51 +420,63 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
           <section>
             <div className="flex flex-wrap gap-2 mb-3">
               {mood.map((m, i) => (
-                <span
-                  key={i}
-                  onClick={() => addFilter('mood', m)}
-                  className="px-3 py-1 rounded-full text-xs font-medium cursor-pointer hover:scale-105 transition-all"
-                  style={{
-                    backgroundColor: `rgba(${accentRgb}, 0.12)`,
-                    color: `rgba(${accentRgb}, 0.8)`,
-                    border: `1px solid rgba(${accentRgb}, 0.2)`,
-                  }}
-                  title={`Filter by mood: ${m}`}
-                >
-                  {m}
-                </span>
+                <ArrayTag
+                  key={i} item={m} idx={i}
+                  field="mood" aiArr={node.semantic_dna?.mood || []}
+                  filterKey="mood" editMode={editMode} onRemove={removeArrayItem}
+                  tagStyle={{ backgroundColor: `rgba(${accentRgb}, 0.12)`, border: `1px solid rgba(${accentRgb}, 0.2)` }}
+                  textStyle={{ color: `rgba(${accentRgb}, 0.8)`, fontWeight: 500 }}
+                />
               ))}
-              {(node.semantic_dna?.themes || []).map((tag, i) => (
-                <span
-                  key={`t-${i}`}
-                  onClick={() => addFilter('themes', tag)}
-                  className="px-3 py-1 rounded-full text-xs cursor-pointer hover:scale-105 transition-all"
-                  style={{
-                    backgroundColor: 'rgba(255,255,255,0.04)',
-                    color: 'rgba(255,255,255,0.5)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                  }}
-                  title={`Filter by theme: ${tag}`}
-                >
-                  #{tag}
-                </span>
+              {themes.map((tag, i) => (
+                <ArrayTag
+                  key={`t-${i}`} item={`#${tag}`} idx={i}
+                  field="themes" aiArr={node.semantic_dna?.themes || []}
+                  filterKey="themes" filterValue={tag}
+                  editMode={editMode} onRemove={removeArrayItem}
+                  tagStyle={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  textStyle={{ color: 'rgba(255,255,255,0.5)' }}
+                />
               ))}
+              {editMode && (
+                <>
+                  <AddTagInput
+                    value={addingValues.mood}
+                    onChangeVal={v => setAddingValues(prev => ({ ...prev, mood: v }))}
+                    onAdd={() => addArrayItem('mood', node.semantic_dna?.mood || [])}
+                    placeholder="+ mood"
+                  />
+                  <AddTagInput
+                    value={addingValues.themes}
+                    onChangeVal={v => setAddingValues(prev => ({ ...prev, themes: v }))}
+                    onAdd={() => addArrayItem('themes', node.semantic_dna?.themes || [])}
+                    placeholder="+ theme"
+                  />
+                </>
+              )}
             </div>
           </section>
 
           {/* AI SUMMARY */}
-          {node.semantic_dna?.ai_summary && (
-            <p className="text-sm text-white/45 leading-relaxed italic">
-              "{node.semantic_dna.ai_summary}"
-            </p>
+          {(aiSummary || editMode) && (
+            editMode ? (
+              <textarea
+                value={aiSummary || ''}
+                onChange={e => setField('ai_summary', e.target.value)}
+                placeholder="Add a description..."
+                rows={3}
+                className="text-sm text-white/45 leading-relaxed italic"
+                style={{ ...editInputStyle, resize: 'vertical', lineHeight: 1.65, fontStyle: 'normal' }}
+              />
+            ) : (
+              <p className="text-sm text-white/45 leading-relaxed italic">"{aiSummary}"</p>
+            )
           )}
 
           {/* SAMPLING */}
           {samplesFrom.length > 0 && (
             <section>
-              <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3" style={{ color: '#E8724A' }}>
-                Samples
-              </h3>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3" style={{ color: '#E8724A' }}>Samples</h3>
               <div className="space-y-2">
                 {samplesFrom.map((sample, i) => (
                   <div
@@ -411,13 +485,8 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                     style={{ backgroundColor: 'rgba(232, 114, 74, 0.08)', border: '1px solid rgba(232, 114, 74, 0.15)' }}
                   >
                     <span className="text-white/80 font-medium">{sample.sampled_song}</span>
-                    <span
-                      className="text-white/40 cursor-pointer hover:text-white/60 transition-colors"
-                      onClick={() => addFilter('artist', sample.sampled_artist)}
-                    > by {sample.sampled_artist}</span>
-                    {sample.element && (
-                      <span className="text-white/30 block mt-1">{sample.element}</span>
-                    )}
+                    <span className="text-white/40 cursor-pointer hover:text-white/60 transition-colors" onClick={() => addFilter('artist', sample.sampled_artist)}> by {sample.sampled_artist}</span>
+                    {sample.element && <span className="text-white/30 block mt-1">{sample.element}</span>}
                   </div>
                 ))}
               </div>
@@ -425,15 +494,64 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
           )}
 
           {/* INSTRUMENTS */}
-          {node.sonic_dna?.prominent_instruments?.length > 0 && (
+          {(instruments.length > 0 || editMode) && (
             <section>
-              <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
-                Instruments
-              </h3>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Instruments</h3>
               <div className="flex flex-wrap gap-1.5">
-                {node.sonic_dna.prominent_instruments.map((inst, i) => (
-                  <FilterPill key={i} value={inst} filterKey="instruments" accentRgb={accentRgb} />
+                {instruments.map((inst, i) => (
+                  editMode ? (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px]"
+                      style={{ backgroundColor: `rgba(${accentRgb}, 0.08)`, color: `rgba(${accentRgb}, 0.65)`, border: `1px solid rgba(${accentRgb}, 0.12)` }}
+                    >
+                      <span>{inst}</span>
+                      <button
+                        onClick={() => removeArrayItem('prominent_instruments', node.sonic_dna?.prominent_instruments || [], i)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', fontSize: 13, padding: 0, lineHeight: 1 }}
+                        onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}
+                      >×</button>
+                    </span>
+                  ) : (
+                    <FilterPill key={i} value={inst} filterKey="instruments" accentRgb={accentRgb} />
+                  )
                 ))}
+                {editMode && (
+                  <AddTagInput
+                    value={addingValues.prominent_instruments}
+                    onChangeVal={v => setAddingValues(prev => ({ ...prev, prominent_instruments: v }))}
+                    onAdd={() => addArrayItem('prominent_instruments', node.sonic_dna?.prominent_instruments || [])}
+                    placeholder="+ instrument"
+                  />
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* GEAR */}
+          {(node.sonic_dna?.instrument_credits || []).some(c => c.make || c.model) && (
+            <section>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Gear</h3>
+              <div className="grid grid-cols-1 gap-0">
+                {(node.sonic_dna.instrument_credits).filter(c => c.make || c.model).map((credit, i, arr) => {
+                  const gearVal = [credit.make, credit.model].filter(Boolean).join(' ');
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-baseline gap-3 py-1.5 text-xs"
+                      style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                    >
+                      <span className="text-white/30 text-[10px] uppercase tracking-wider flex-shrink-0 w-20 truncate">{credit.instrument}</span>
+                      <span
+                        className="text-white/75 font-medium cursor-pointer hover:text-white transition-colors flex-1"
+                        onClick={() => addFilter('gear', gearVal)}
+                        title={`Filter: ${gearVal}`}
+                      >{gearVal}</span>
+                      {credit.player && <span className="text-white/30 italic text-[10px] flex-shrink-0">{credit.player}</span>}
+                    </div>
+                  );
+                })}
               </div>
             </section>
           )}
@@ -441,20 +559,12 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
           {/* MUSICIAN CREDITS */}
           {Object.keys(musicianCredits).length > 0 && (
             <section>
-              <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
-                Musicians
-              </h3>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Musicians</h3>
               <div className="grid grid-cols-1 gap-1.5">
                 {Object.entries(musicianCredits).map(([name, role], i) => (
                   <div key={i} className="flex justify-between text-xs py-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <span className="text-white/70">{name}</span>
-                    <span
-                      className="text-white/30 italic cursor-pointer hover:text-white/50 transition-colors"
-                      onClick={() => addFilter('instruments', role)}
-                      title={`Filter by instrument: ${role}`}
-                    >
-                      {role}
-                    </span>
+                    <span className="text-white/30 italic cursor-pointer hover:text-white/50 transition-colors" onClick={() => addFilter('instruments', role)}>{role}</span>
                   </div>
                 ))}
               </div>
@@ -463,63 +573,93 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
 
           {/* PRODUCTION */}
           <section>
-            <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
-              Production
-            </h3>
+            <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Production</h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              {node.genetic_dna?.producer && (
-                <div className="group">
+              {(producer || editMode) && (
+                <div>
                   <div className="text-white/30 mb-0.5">PRODUCER</div>
-                  <div
-                    className="text-white/80 cursor-pointer hover:text-white transition-colors"
-                    onClick={() => addFilter('producer', node.genetic_dna.producer)}
-                    title={`Filter by producer: ${node.genetic_dna.producer}`}
-                  >
-                    {node.genetic_dna.producer}
-                  </div>
+                  {editMode ? (
+                    <input
+                      value={producer || ''}
+                      onChange={e => setField('producer', e.target.value)}
+                      style={editInputStyle}
+                      placeholder="Producer"
+                    />
+                  ) : (
+                    <div className="text-white/80 cursor-pointer hover:text-white transition-colors" onClick={() => addFilter('producer', producer)}>{producer}</div>
+                  )}
                 </div>
               )}
-              {node.genetic_dna?.mixing_engineer && (
+              {(mixEngineer || editMode) && (
                 <div>
                   <div className="text-white/30 mb-0.5">MIX ENGINEER</div>
-                  <div className="text-white/80">{node.genetic_dna.mixing_engineer}</div>
+                  {editMode ? (
+                    <input
+                      value={mixEngineer || ''}
+                      onChange={e => setField('mixing_engineer', e.target.value)}
+                      style={editInputStyle}
+                      placeholder="Mix engineer"
+                    />
+                  ) : (
+                    <div className="text-white/80">{mixEngineer}</div>
+                  )}
                 </div>
               )}
-              {songwriter.length > 0 && (
+              {(songwriterList.length > 0 || editMode) && (
                 <div className="col-span-2">
                   <div className="text-white/30 mb-0.5">SONGWRITERS</div>
-                  <div className="text-white/80">
-                    {songwriter.map((sw, i) => (
-                      <span key={i}>
-                        {i > 0 && ', '}
-                        <span
-                          className="cursor-pointer hover:text-white transition-colors"
-                          onClick={() => addFilter('artist', sw)}
-                          title={`Search for: ${sw}`}
-                        >
-                          {sw}
+                  {editMode ? (
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {songwriterList.map((sw, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px]" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
+                          <span>{sw}</span>
+                          <button onClick={() => removeArrayItem('songwriter', node.genetic_dna?.songwriter || [], i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', fontSize: 13, padding: 0, lineHeight: 1 }} onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}>×</button>
                         </span>
-                      </span>
-                    ))}
-                  </div>
+                      ))}
+                      <AddTagInput
+                        value={addingValues.songwriter}
+                        onChangeVal={v => setAddingValues(prev => ({ ...prev, songwriter: v }))}
+                        onAdd={() => addArrayItem('songwriter', node.genetic_dna?.songwriter || [])}
+                        placeholder="+ name"
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-white/80">
+                      {songwriterList.map((sw, i) => (
+                        <span key={i}>{i > 0 && ', '}<span className="cursor-pointer hover:text-white transition-colors" onClick={() => addFilter('artist', sw)}>{sw}</span></span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
-              {node.genetic_dna?.label && (
+              {(labelVal || editMode) && (
                 <div>
                   <div className="text-white/30 mb-0.5">LABEL</div>
-                  <div
-                    className="text-white/80 cursor-pointer hover:text-white transition-colors"
-                    onClick={() => addFilter('label', node.genetic_dna.label)}
-                    title={`Filter by label: ${node.genetic_dna.label}`}
-                  >
-                    {node.genetic_dna.label}
-                  </div>
+                  {editMode ? (
+                    <input
+                      value={labelVal || ''}
+                      onChange={e => setField('label', e.target.value)}
+                      style={editInputStyle}
+                      placeholder="Label"
+                    />
+                  ) : (
+                    <div className="text-white/80 cursor-pointer hover:text-white transition-colors" onClick={() => addFilter('label', labelVal)}>{labelVal}</div>
+                  )}
                 </div>
               )}
-              {node.genetic_dna?.studio && (
+              {(studioVal || editMode) && (
                 <div className="col-span-2">
                   <div className="text-white/30 mb-0.5">STUDIO</div>
-                  <div className="text-white/80 font-mono text-[10px]">{node.genetic_dna.studio}</div>
+                  {editMode ? (
+                    <input
+                      value={studioVal || ''}
+                      onChange={e => setField('studio', e.target.value)}
+                      style={editInputStyle}
+                      placeholder="Studio"
+                    />
+                  ) : (
+                    <div className="text-white/80 font-mono text-[10px]">{studioVal}</div>
+                  )}
                 </div>
               )}
             </div>
@@ -528,9 +668,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
           {/* SONIC CHARACTER */}
           {(node.sonic_dna?.energy !== null || node.sonic_dna?.rhythm_feel) && (
             <section>
-              <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">
-                Sonic Character
-              </h3>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Sonic Character</h3>
               <div className="space-y-2">
                 {node.sonic_dna?.energy !== null && (
                   <div>
@@ -541,10 +679,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                     <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${(node.sonic_dna.energy || 0) * 100}%`,
-                          backgroundColor: `rgba(${accentRgb}, 0.6)`,
-                        }}
+                        style={{ width: `${(node.sonic_dna.energy || 0) * 100}%`, backgroundColor: `rgba(${accentRgb}, 0.6)` }}
                       />
                     </div>
                   </div>
@@ -559,23 +694,14 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                       <div key={i}>
                         <div className="text-[10px] text-white/25 mb-1">{band.label}</div>
                         <div className="h-1 rounded-full bg-white/5 overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${(band.value || 0) * 100}%`,
-                              backgroundColor: `rgba(${accentRgb}, 0.4)`,
-                            }}
-                          />
+                          <div className="h-full rounded-full" style={{ width: `${(band.value || 0) * 100}%`, backgroundColor: `rgba(${accentRgb}, 0.4)` }} />
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
                 {node.sonic_dna?.rhythm_feel && node.sonic_dna.rhythm_feel !== 'straight' && (
-                  <div
-                    className="text-xs text-white/40 cursor-pointer hover:text-white/60 transition-colors"
-                    onClick={() => addFilter('rhythm_feel', node.sonic_dna.rhythm_feel)}
-                  >
+                  <div className="text-xs text-white/40 cursor-pointer hover:text-white/60 transition-colors" onClick={() => addFilter('rhythm_feel', node.sonic_dna.rhythm_feel)}>
                     Rhythm: <span className="text-white/60">{node.sonic_dna.rhythm_feel}</span>
                   </div>
                 )}
@@ -583,7 +709,52 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             </section>
           )}
 
-          {/* LYRICS PREVIEW */}
+          {/* MUSICBRAINZ CREDITS */}
+          {node.mb_credits && node.mb_credits.credits && node.mb_credits.credits.length > 0 && (
+            <section>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Recording Credits</h3>
+
+              {/* Recording info line */}
+              {(node.mb_credits.location || node.mb_credits.begin) && (
+                <div className="text-[11px] text-white/35 italic mb-3">
+                  {[
+                    node.mb_credits.location,
+                    node.mb_credits.begin && node.mb_credits.end && node.mb_credits.begin !== node.mb_credits.end
+                      ? `${node.mb_credits.begin} – ${node.mb_credits.end}`
+                      : node.mb_credits.begin || node.mb_credits.end,
+                  ].filter(Boolean).join(' · ')}
+                </div>
+              )}
+
+              {/* Credits list grouped by role */}
+              {(() => {
+                const grouped = {};
+                node.mb_credits.credits.forEach(c => {
+                  const roleLabel = c.attr_str
+                    ? `${c.role} (${c.attr_str})`
+                    : c.role;
+                  if (!grouped[roleLabel]) grouped[roleLabel] = [];
+                  if (!grouped[roleLabel].includes(c.name)) grouped[roleLabel].push(c.name);
+                });
+                return (
+                  <div className="grid grid-cols-1 gap-0">
+                    {Object.entries(grouped).map(([role, names], i, arr) => (
+                      <div
+                        key={i}
+                        className="flex items-baseline gap-3 py-1.5 text-xs"
+                        style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
+                      >
+                        <span className="text-white/30 text-[10px] uppercase tracking-wider flex-shrink-0 w-28 truncate">{role}</span>
+                        <span className="text-white/75 flex-1">{names.join(', ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </section>
+          )}
+
+          {/* LYRICS */}
           {node.has_lyrics && (
             <section>
               <button
@@ -593,19 +764,48 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
               >
                 Lyrics {showLyrics ? '▾' : '▸'}
               </button>
-              {showLyrics && node.lyrics_preview && (
+              {showLyrics && (
                 <pre
-                  className="text-xs text-white/30 leading-relaxed whitespace-pre-wrap font-sans max-h-[200px] overflow-y-auto"
+                  className="text-xs text-white/30 leading-relaxed whitespace-pre-wrap font-sans overflow-y-auto"
                   style={{
+                    maxHeight: 400,
                     scrollbarWidth: 'thin',
                     scrollbarColor: `rgba(${accentRgb}, 0.2) transparent`,
                   }}
                 >
-                  {node.lyrics_preview}
+                  {node.lyrics || node.lyrics_preview}
                 </pre>
               )}
             </section>
           )}
+
+          {/* NOTES */}
+          <section>
+            <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-2">Notes</h3>
+            <textarea
+              value={localNotes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Add personal notes about this song..."
+              rows={3}
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 8,
+                color: 'rgba(255,255,255,0.65)',
+                fontSize: 12,
+                lineHeight: 1.6,
+                padding: '8px 10px',
+                outline: 'none',
+                resize: 'vertical',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                minHeight: 72,
+                transition: 'border-color 0.15s',
+              }}
+              onFocus={e => { e.target.style.borderColor = `rgba(${accentRgb}, 0.3)`; }}
+              onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.07)'; }}
+            />
+          </section>
 
         </div>
       </div>

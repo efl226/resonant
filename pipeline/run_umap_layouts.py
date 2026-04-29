@@ -3,9 +3,10 @@ Generate multiple UMAP layouts from structured song features.
 Each layout emphasizes different dimensions, giving users axis control on the frontend.
 
 Layouts:
-  sonic    — BPM, energy, key, mode, time sig, vocal type, rhythm, bass/mid/treble weights
-  vibe     — mood (one-hot) + themes (one-hot)
-  genetics — decade, producer, label, studio (shared-production proximity)
+  sonic  — BPM, energy, key, mode, time sig, vocal type, rhythm, bass/mid/treble weights
+  vibe   — mood (one-hot) + themes (one-hot)
+  decade — decade + year (era-based proximity)
+  dna    — producer, label, studio, songwriter (production lineage)
 
 Run:
   python pipeline/run_umap_layouts.py [--collection default] [--dry-run]
@@ -153,21 +154,45 @@ def build_vibe_features(songs, top_moods=30, top_themes=30):
     return mat
 
 
-def build_genetics_features(songs):
+def build_decade_features(songs):
     """
-    Production/era proximity:
-      decade (normalised), producer (encoded), label (encoded), studio (encoded)
+    Era-based proximity: decade + exact year, heavily weighted toward era grouping.
     """
-    decades = np.array([
-        (float(s["year"]) // 10 * 10 - 1960) / 70.0 if s["year"] else 0.5
+    decade_norm = np.array([
+        (float(s["year"]) // 10 * 10 - 1950) / 80.0 if s["year"] else 0.5
         for s in songs
     ]).reshape(-1, 1)
 
+    year_norm = np.array([
+        (float(s["year"]) - 1950) / 80.0 if s["year"] else 0.5
+        for s in songs
+    ]).reshape(-1, 1)
+
+    # Weight decade more heavily so songs cluster by era first
+    mat = np.hstack([decade_norm * 3.0, year_norm])
+
+    scaler = MinMaxScaler()
+    return scaler.fit_transform(mat)
+
+
+def build_dna_features(songs):
+    """
+    Production lineage: producer, label, studio, songwriter.
+    No time component — purely about who made it and where.
+    """
+    # Songwriter: use first songwriter if it's a list
+    def first_songwriter(s):
+        sw = s.get("songwriter")
+        if isinstance(sw, list) and sw:
+            return sw[0]
+        return sw if sw else None
+
     mat = np.hstack([
-        decades,
         encode_categorical([s["producer"] for s in songs]),
         encode_categorical([s["label"] for s in songs]),
         encode_categorical([s["studio"] for s in songs]),
+        encode_categorical([first_songwriter(s) for s in songs]),
+        encode_categorical([s.get("mixing_engineer") for s in songs]),
     ])
 
     scaler = MinMaxScaler()
@@ -187,7 +212,8 @@ def run(collection_id="default", dry_run=False):
                vocal_type, rhythm_feel,
                bass_weight, mid_weight, treble_weight,
                mood, themes,
-               producer, label, studio
+               producer, label, studio,
+               songwriter, mixing_engineer
         FROM songs
         WHERE collection_id = %s
     """, (collection_id,))
@@ -200,6 +226,7 @@ def run(collection_id="default", dry_run=False):
         "bass_weight", "mid_weight", "treble_weight",
         "mood", "themes",
         "producer", "label", "studio",
+        "songwriter", "mixing_engineer",
     ]
     songs = [dict(zip(cols, r)) for r in rows]
     print(f"\nLoaded {len(songs)} songs from collection '{collection_id}'")
@@ -216,38 +243,48 @@ def run(collection_id="default", dry_run=False):
     print("\n[1/3] Building SONIC layout...")
     try:
         sonic_feat = build_sonic_features(songs)
-        sonic_coords = run_umap(sonic_feat, label="sonic", min_dist=0.05)
+        sonic_coords = run_umap(sonic_feat, label="sonic", min_dist=0.6, n_neighbors=40)
         if sonic_coords is not None:
             layouts["sonic"] = sonic_coords
     except Exception as e:
         print(f"  ✗ Sonic layout failed: {e}")
 
     # ── Vibe ───────────────────────────────────────────────────────────────
-    print("\n[2/3] Building VIBE layout...")
+    print("\n[2/4] Building VIBE layout...")
     try:
         vibe_feat = build_vibe_features(songs)
-        vibe_coords = run_umap(vibe_feat, label="vibe", min_dist=0.1, metric="jaccard")
+        vibe_coords = run_umap(vibe_feat, label="vibe", min_dist=0.6, n_neighbors=40, metric="jaccard")
         if vibe_coords is not None:
             layouts["vibe"] = vibe_coords
     except Exception as e:
         print(f"  ✗ Vibe layout failed (retrying with euclidean): {e}")
         try:
             vibe_feat2 = build_vibe_features(songs)
-            vibe_coords2 = run_umap(vibe_feat2, label="vibe-fallback", min_dist=0.1)
+            vibe_coords2 = run_umap(vibe_feat2, label="vibe-fallback", min_dist=0.6, n_neighbors=40)
             if vibe_coords2 is not None:
                 layouts["vibe"] = vibe_coords2
         except Exception as e2:
             print(f"  ✗ Vibe fallback also failed: {e2}")
 
-    # ── Genetics ───────────────────────────────────────────────────────────
-    print("\n[3/3] Building GENETICS layout...")
+    # ── Decade ─────────────────────────────────────────────────────────────
+    print("\n[3/4] Building DECADE layout...")
     try:
-        gen_feat = build_genetics_features(songs)
-        gen_coords = run_umap(gen_feat, label="genetics", min_dist=0.08)
-        if gen_coords is not None:
-            layouts["genetics"] = gen_coords
+        decade_feat = build_decade_features(songs)
+        decade_coords = run_umap(decade_feat, label="decade", min_dist=0.4, n_neighbors=30)
+        if decade_coords is not None:
+            layouts["decade"] = decade_coords
     except Exception as e:
-        print(f"  ✗ Genetics layout failed: {e}")
+        print(f"  ✗ Decade layout failed: {e}")
+
+    # ── DNA ────────────────────────────────────────────────────────────────
+    print("\n[4/4] Building DNA layout...")
+    try:
+        dna_feat = build_dna_features(songs)
+        dna_coords = run_umap(dna_feat, label="dna", min_dist=0.4, n_neighbors=30)
+        if dna_coords is not None:
+            layouts["dna"] = dna_coords
+    except Exception as e:
+        print(f"  ✗ DNA layout failed: {e}")
 
     # ── Write to DB ────────────────────────────────────────────────────────
     if dry_run:

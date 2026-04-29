@@ -55,7 +55,7 @@ def extract_colors(image_url):
             'palette': [rgb_to_hex(c) for c in palette],
         }
     except Exception as e:
-        print(f"    ✗ Error: {e}")
+        print(f"    FAIL: {e}")
         return None
 
 
@@ -63,14 +63,17 @@ success = 0
 failed = 0
 
 for i, (song_id, name, artist, img_url) in enumerate(rows):
-    print(f"[{i+1}/{len(rows)}] {artist} — {name}")
-    
+    # Strip non-ASCII for safe terminal output on Windows
+    safe_artist = artist.encode('ascii', 'replace').decode('ascii')
+    safe_name = name.encode('ascii', 'replace').decode('ascii')
+    print(f"[{i+1}/{len(rows)}] {safe_artist} - {safe_name}")
+
     colors = extract_colors(img_url)
-    
+
     if colors:
         cur.execute("""
-            UPDATE songs 
-            SET primary_color = %s, palette = %s 
+            UPDATE songs
+            SET primary_color = %s, palette = %s
             WHERE id = %s
         """, (
             colors['primary_color'],
@@ -78,33 +81,19 @@ for i, (song_id, name, artist, img_url) in enumerate(rows):
             song_id,
         ))
         conn.commit()
-        print(f"    ✓ Primary: {colors['primary_color']} | Palette: {colors['palette']}")
+        print(f"    OK Primary: {colors['primary_color']} | Palette: {colors['palette']}")
         success += 1
     else:
         failed += 1
-    
-    # Small delay to be polite to Spotify's CDN
+
     time.sleep(0.3)
 
 print(f"\n{'='*50}")
-print(f"✓ Extracted colors: {success} succeeded, {failed} failed")
+print(f"Done: {success} succeeded, {failed} failed")
 
-# Verify
 cur.execute("SELECT COUNT(*) FROM songs WHERE primary_color IS NOT NULL")
 total = cur.fetchone()[0]
-print(f"  Songs with colors: {total}")
-
-# Show a few samples
-cur.execute("""
-    SELECT name, artist, primary_color, palette 
-    FROM songs 
-    WHERE primary_color IS NOT NULL 
-    LIMIT 5
-""")
-print(f"\nSamples:")
-for row in cur.fetchall():
-    print(f"  {row[1]} — {row[0]}")
-    print(f"    Primary: {row[2]} | Palette: {row[3]}")
+print(f"Songs with colors: {total}")
 
 cur.close()
 conn.close()

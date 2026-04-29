@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
-from fastapi import FastAPI
+from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
 import psycopg
 import json
@@ -31,38 +31,17 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/api/graph")
-def get_graph(collection: str = "default"):
-    conn = psycopg.connect(DATABASE_URL)
-    cur = conn.cursor()
+# ── helpers ───────────────────────────────────────────────────────────────────
 
-    cur.execute("""
-        SELECT id, name, artist, album, year, img,
-               bpm, key, energy, duration, prominent_instruments,
-               producer, mixing_engineer, studio, songwriter, featuring, label,
-               primary_color, palette, texture,
-               mood, themes, ai_summary,
-               umap_x, umap_y,
-               scale, mode, time_signature, key_changes, key_changes_detail,
-               energy_shape, bass_weight, mid_weight, treble_weight,
-               vocal_type, rhythm_feel,
-               country_recorded, conductor, musician_credits, samples_from,
-               fun_fact, sonic_fingerprint,
-               lyrics, lyrics_source,
-               is_live, spotify_uri,
-               cluster_id,
-               umap_sonic_x, umap_sonic_y,
-               umap_vibe_x, umap_vibe_y,
-               umap_genetics_x, umap_genetics_y,
-               umap_sonic_x3, umap_sonic_y3, umap_sonic_z3,
-               umap_vibe_x3, umap_vibe_y3, umap_vibe_z3,
-               umap_genetics_x3, umap_genetics_y3, umap_genetics_z3
-        FROM songs
-        WHERE collection_id = %s
-    """, (collection,))
+def _build_nodes(rows, has_new_layout_cols: bool):
+    """
+    Convert raw DB rows to node dicts.
 
+    has_new_layout_cols=True  → decade/dna columns + cluster_*_id cols present
+    has_new_layout_cols=False → legacy genetics columns, no per-layout cluster IDs
+    """
     nodes = []
-    for row in cur.fetchall():
+    for row in rows:
         musician_credits = row[38]
         if isinstance(musician_credits, str):
             try: musician_credits = json.loads(musician_credits)
@@ -73,9 +52,86 @@ def get_graph(collection: str = "default"):
             try: samples_from = json.loads(samples_from)
             except: samples_from = None
 
+        instrument_credits = None
+        if has_new_layout_cols and len(row) > 71:
+            ic = row[71]
+            if isinstance(ic, str):
+                try: instrument_credits = json.loads(ic)
+                except: instrument_credits = None
+            elif isinstance(ic, list):
+                instrument_credits = ic
+
+        user_notes = None
+        user_edits = {}
+        if has_new_layout_cols and len(row) > 72:
+            user_notes = row[72]
+        if has_new_layout_cols and len(row) > 73:
+            ue = row[73]
+            if isinstance(ue, str):
+                try: user_edits = json.loads(ue)
+                except: user_edits = {}
+            elif isinstance(ue, dict):
+                user_edits = ue
+
+        isrc = None
+        if has_new_layout_cols and len(row) > 74:
+            isrc = row[74]
+
+        mb_credits = None
+        if has_new_layout_cols and len(row) > 75:
+            mc = row[75]
+            if isinstance(mc, str):
+                try: mb_credits = json.loads(mc)
+                except: mb_credits = None
+            elif isinstance(mc, dict):
+                mb_credits = mc if mc else None
+
+        lyrics_full = row[42] if row[42] else None
         lyrics_preview = None
-        if row[42]:
-            lyrics_preview = row[42][:300] + "..." if len(row[42]) > 300 else row[42]
+        if lyrics_full:
+            lyrics_preview = lyrics_full[:300] + "..." if len(lyrics_full) > 300 else lyrics_full
+
+        if has_new_layout_cols:
+            # Indices 47-54: sonic/vibe/decade/dna 2D
+            # Indices 55-66: sonic/vibe/decade/dna 3D
+            # Indices 67-70: per-layout cluster IDs
+            layouts = {
+                "sonic":  {"x": row[47], "y": row[48]},
+                "vibe":   {"x": row[49], "y": row[50]},
+                "decade": {"x": row[51], "y": row[52]},
+                "dna":    {"x": row[53], "y": row[54]},
+            }
+            layouts3d = {
+                "sonic":  {"x": row[55], "y": row[56], "z": row[57]},
+                "vibe":   {"x": row[58], "y": row[59], "z": row[60]},
+                "decade": {"x": row[61], "y": row[62], "z": row[63]},
+                "dna":    {"x": row[64], "y": row[65], "z": row[66]},
+            }
+            cluster_ids = {
+                "sonic":  row[67],
+                "vibe":   row[68],
+                "decade": row[69],
+                "dna":    row[70],
+            }
+        else:
+            # Legacy: genetics columns mapped to both decade and dna for backwards compat
+            layouts = {
+                "sonic":    {"x": row[47], "y": row[48]},
+                "vibe":     {"x": row[49], "y": row[50]},
+                "decade":   {"x": row[51], "y": row[52]},
+                "dna":      {"x": row[51], "y": row[52]},
+                "genetics": {"x": row[51], "y": row[52]},
+            }
+            layouts3d = {
+                "sonic":    {"x": row[53], "y": row[54], "z": row[55]},
+                "vibe":     {"x": row[56], "y": row[57], "z": row[58]},
+                "decade":   {"x": row[59], "y": row[60], "z": row[61]},
+                "dna":      {"x": row[59], "y": row[60], "z": row[61]},
+                "genetics": {"x": row[59], "y": row[60], "z": row[61]},
+            }
+            cluster_ids = {
+                "sonic": None, "vibe": None, "decade": None, "dna": None,
+            }
 
         nodes.append({
             "id": row[0], "name": row[1], "artist": row[2],
@@ -88,6 +144,7 @@ def get_graph(collection: str = "default"):
                 "energy_shape": row[30], "bass_weight": row[31],
                 "mid_weight": row[32], "treble_weight": row[33],
                 "vocal_type": row[34], "rhythm_feel": row[35],
+                "instrument_credits": instrument_credits or [],
             },
             "genetic_dna": {
                 "producer": row[11], "mixing_engineer": row[12],
@@ -106,25 +163,91 @@ def get_graph(collection: str = "default"):
                 "ai_summary": row[22], "fun_fact": row[40],
                 "sonic_fingerprint": row[41],
             },
+            "lyrics": lyrics_full,
             "lyrics_preview": lyrics_preview,
-            "has_lyrics": row[42] is not None,
+            "has_lyrics": lyrics_full is not None,
             "is_live": row[44],
             "spotify_uri": row[45],
             "cluster_id": row[46],
+            "cluster_ids": cluster_ids,
             "umap_x": row[23], "umap_y": row[24],
-            "layouts": {
-                "sonic":    {"x": row[47], "y": row[48]},
-                "vibe":     {"x": row[49], "y": row[50]},
-                "genetics": {"x": row[51], "y": row[52]},
-            },
-            "layouts3d": {
-                "sonic":    {"x": row[53], "y": row[54], "z": row[55]},
-                "vibe":     {"x": row[56], "y": row[57], "z": row[58]},
-                "genetics": {"x": row[59], "y": row[60], "z": row[61]},
-            },
+            "layouts": layouts,
+            "layouts3d": layouts3d,
+            "user_notes": user_notes,
+            "user_edits": user_edits,
+            "isrc": isrc,
+            "mb_credits": mb_credits,
         })
+    return nodes
 
-    # Get links
+
+# ── routes ────────────────────────────────────────────────────────────────────
+
+@app.get("/api/graph")
+def get_graph(collection: str = "default"):
+    conn = psycopg.connect(DATABASE_URL)
+    cur = conn.cursor()
+
+    nodes = []
+    try:
+        cur.execute("""
+            SELECT id, name, artist, album, year, img,
+                   bpm, key, energy, duration, prominent_instruments,
+                   producer, mixing_engineer, studio, songwriter, featuring, label,
+                   primary_color, palette, texture,
+                   mood, themes, ai_summary,
+                   umap_x, umap_y,
+                   scale, mode, time_signature, key_changes, key_changes_detail,
+                   energy_shape, bass_weight, mid_weight, treble_weight,
+                   vocal_type, rhythm_feel,
+                   country_recorded, conductor, musician_credits, samples_from,
+                   fun_fact, sonic_fingerprint,
+                   lyrics, lyrics_source,
+                   is_live, spotify_uri,
+                   cluster_id,
+                   umap_sonic_x, umap_sonic_y,
+                   umap_vibe_x, umap_vibe_y,
+                   umap_decade_x, umap_decade_y,
+                   umap_dna_x, umap_dna_y,
+                   umap_sonic_x3, umap_sonic_y3, umap_sonic_z3,
+                   umap_vibe_x3, umap_vibe_y3, umap_vibe_z3,
+                   umap_decade_x3, umap_decade_y3, umap_decade_z3,
+                   umap_dna_x3, umap_dna_y3, umap_dna_z3,
+                   cluster_sonic_id, cluster_vibe_id, cluster_decade_id, cluster_dna_id,
+                   instrument_credits,
+                   user_notes, user_edits,
+                   isrc, mb_credits
+            FROM songs WHERE collection_id = %s
+        """, (collection,))
+        nodes = _build_nodes(cur.fetchall(), has_new_layout_cols=True)
+    except Exception:
+        conn.rollback()
+        # Migration hasn't run yet — fall back to legacy genetics columns
+        cur.execute("""
+            SELECT id, name, artist, album, year, img,
+                   bpm, key, energy, duration, prominent_instruments,
+                   producer, mixing_engineer, studio, songwriter, featuring, label,
+                   primary_color, palette, texture,
+                   mood, themes, ai_summary,
+                   umap_x, umap_y,
+                   scale, mode, time_signature, key_changes, key_changes_detail,
+                   energy_shape, bass_weight, mid_weight, treble_weight,
+                   vocal_type, rhythm_feel,
+                   country_recorded, conductor, musician_credits, samples_from,
+                   fun_fact, sonic_fingerprint,
+                   lyrics, lyrics_source,
+                   is_live, spotify_uri,
+                   cluster_id,
+                   umap_sonic_x, umap_sonic_y,
+                   umap_vibe_x, umap_vibe_y,
+                   umap_genetics_x, umap_genetics_y,
+                   umap_sonic_x3, umap_sonic_y3, umap_sonic_z3,
+                   umap_vibe_x3, umap_vibe_y3, umap_vibe_z3,
+                   umap_genetics_x3, umap_genetics_y3, umap_genetics_z3
+            FROM songs WHERE collection_id = %s
+        """, (collection,))
+        nodes = _build_nodes(cur.fetchall(), has_new_layout_cols=False)
+
     song_ids = [n["id"] for n in nodes]
     if song_ids:
         cur.execute("""
@@ -175,17 +298,21 @@ def get_song(song_id: str):
 
 
 @app.get("/api/clusters")
-def get_clusters(collection: str = "default"):
-    try:
-        with open(f"pipeline/output/clusters_{collection}.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        pass
-    try:
-        with open("pipeline/output/clusters.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {"clusters": [], "unclustered_count": 0, "total_songs": 0}
+def get_clusters(collection: str = "default", layout: str = ""):
+    candidates = []
+    if layout:
+        candidates.append(f"pipeline/output/clusters_{collection}_{layout}.json")
+    candidates += [
+        f"pipeline/output/clusters_{collection}.json",
+        "pipeline/output/clusters.json",
+    ]
+    for path in candidates:
+        try:
+            with open(path, "r") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            continue
+    return {"clusters": [], "unclustered_count": 0, "total_songs": 0}
 
 
 @app.get("/api/search")
@@ -262,6 +389,12 @@ def filter_direct(filters: dict, collection: str = "default"):
     if filters.get("mixing_engineer"):
         conditions.append("mixing_engineer ILIKE %s")
         params.append(f"%{filters['mixing_engineer']}%")
+    if filters.get("instrument_make"):
+        conditions.append("EXISTS (SELECT 1 FROM jsonb_array_elements(instrument_credits) AS ic WHERE ic->>'make' ILIKE %s)")
+        params.append(f"%{filters['instrument_make']}%")
+    if filters.get("instrument_model"):
+        conditions.append("EXISTS (SELECT 1 FROM jsonb_array_elements(instrument_credits) AS ic WHERE ic->>'model' ILIKE %s)")
+        params.append(f"%{filters['instrument_model']}%")
     if filters.get("decade"):
         decade_map = {
             "60s": (1960, 1969), "1960s": (1960, 1969),
@@ -296,6 +429,22 @@ def filter_direct(filters: dict, collection: str = "default"):
     cur.close()
     conn.close()
     return {"results": results, "total": len(results)}
+
+
+@app.patch("/api/songs/{song_id}/edits")
+def save_song_edits(song_id: str, body: dict = Body(...)):
+    edits = body.get("edits") or {}
+    notes = body.get("notes") or None
+    conn = psycopg.connect(DATABASE_URL)
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE songs SET user_edits = %s, user_notes = %s WHERE id = %s",
+        (json.dumps(edits), notes, song_id),
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"ok": True}
 
 
 @app.get("/api/stats")

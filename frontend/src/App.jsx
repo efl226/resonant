@@ -9,6 +9,7 @@ import ConnectionHint from './components/ConnectionHint';
 import ExplorePanel, { computeMatches, getSharedAttributes } from './components/ExplorePanel';
 import ComparePanel, { COLOR_A as COMPARE_COLOR_A, COLOR_B as COMPARE_COLOR_B } from './components/ComparePanel';
 import LayoutPicker from './components/LayoutPicker';
+import ClusterPanel from './components/ClusterPanel';
 import Graph3D from './components/Graph3D';
 import { loadGraphData, loadClusterData } from './api/client';
 import FALLBACK_DATA from './data/songsseed.json';
@@ -72,6 +73,7 @@ const LINK_TYPE_CONFIG = {
   songwriter:         { label: 'Same Songwriter',   color: '#B84AE8', icon: '✎' },
   mixing_engineer:    { label: 'Same Mix Engineer', color: '#B84AE8', icon: '◈' },
   artist:             { label: 'Same Artist',       color: '#4A9EE8', icon: '◎' },
+  gear:               { label: 'Same Gear',         color: '#4AE8D4', icon: '◈' },
 };
 
 // Color-only map for ForceGraph2D link props (extracted from LINK_TYPE_CONFIG)
@@ -107,17 +109,22 @@ function getVirtualLinkReason(filter) {
     case 'songwriter':      return `Both written by ${filter.value}`;
     case 'mixing_engineer': return `Both mixed by ${filter.value}`;
     case 'artist':          return `Same artist: ${filter.value}`;
+    case 'gear':            return `Both used: ${filter.value}`;
     default:                return '';
   }
 }
 
 export default function App() {
   const graphRef = useRef();
+  const clusterLabelHitboxes = useRef([]);
+  const hoveredClusterPillId = useRef(null);
   
   const [fullGraphData, setFullGraphData] = useState(FALLBACK_DATA);
   const [graphData, setGraphData] = useState(FALLBACK_DATA);
   const [clusters, setClusters] = useState([]);
   const [allClusters, setAllClusters] = useState([]);
+  const [clusterCache, setClusterCache] = useState({});
+  const [selectedCluster, setSelectedCluster] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('graph');
   const [selectedNode, setSelectedNode] = useState(null);
@@ -157,13 +164,34 @@ export default function App() {
         const processed = { nodes: processedNodes, links: data.links };
         setFullGraphData(processed);
         setGraphData(processed);
-        setAllClusters(clusterData.clusters || []);
-        setClusters(clusterData.clusters || []);
+        const defaultClusters = clusterData.clusters || [];
+        setAllClusters(defaultClusters);
+        setClusters(defaultClusters);
+        setClusterCache({ default: defaultClusters });
         setLoading(false);
-        console.log(`[Resonant] Graph data ready. ${clusterData.clusters?.length || 0} clusters loaded`);
+        console.log(`[Resonant] Graph data ready. ${defaultClusters.length} clusters loaded`);
       })
       .catch(() => setLoading(false));
   }, []);
+
+  // Re-fetch clusters when layout changes (uses per-layout JSON if available)
+  useEffect(() => {
+    if (loading) return;
+    const layout = activeLayout === 'default' ? '' : activeLayout;
+    if (clusterCache[activeLayout]) {
+      setClusters(clusterCache[activeLayout]);
+      setAllClusters(clusterCache[activeLayout]);
+      setSelectedCluster(null);
+      return;
+    }
+    loadClusterData(layout).then(data => {
+      const newClusters = data.clusters || [];
+      setClusters(newClusters);
+      setAllClusters(newClusters);
+      setClusterCache(prev => ({ ...prev, [activeLayout]: newClusters }));
+      setSelectedCluster(null);
+    });
+  }, [activeLayout]);
 
   useEffect(() => {
     if (!graphRef.current || loading) return;
@@ -514,14 +542,31 @@ export default function App() {
   }));
   }, []);
 
-  const handleBackgroundClick = useCallback(() => {
-    if (compareMode) return; // overlay handles click-outside for compare
+  const handleBackgroundClick = useCallback((event) => {
+    if (compareMode) return;
     if (hoveredVirtualLink) {
       handleNodeClick(hoveredVirtualLink._otherNode);
       return;
     }
+    // Check if click landed on a cluster label pill (graph-space coords)
+    if (event && graphRef.current && clusterLabelHitboxes.current.length > 0) {
+      const fg = graphRef.current;
+      const graphCoords = fg.screen2GraphCoords(event.clientX, event.clientY);
+      const hit = clusterLabelHitboxes.current.find(box =>
+        graphCoords.x >= box.x && graphCoords.x <= box.x + box.w &&
+        graphCoords.y >= box.y && graphCoords.y <= box.y + box.h
+      );
+      if (hit) {
+        const cluster = clusters.find(c => c.id === hit.clusterId);
+        if (cluster) {
+          setSelectedCluster(cluster);
+          return;
+        }
+      }
+    }
     setSelectedNode(null);
-  }, [hoveredVirtualLink, handleNodeClick, compareMode]);
+    setSelectedCluster(null);
+  }, [hoveredVirtualLink, handleNodeClick, compareMode, clusters]);
 
   
   
@@ -546,6 +591,17 @@ export default function App() {
     onMouseMove={(e) => {
       const pos = { x: e.clientX, y: e.clientY };
       setMousePos(pos);
+      // Cluster pill hover detection
+      if (graphRef.current && clusterLabelHitboxes.current.length > 0) {
+        const gc = graphRef.current.screen2GraphCoords(e.clientX, e.clientY);
+        const hit = clusterLabelHitboxes.current.find(box =>
+          gc.x >= box.x && gc.x <= box.x + box.w &&
+          gc.y >= box.y && gc.y <= box.y + box.h
+        );
+        hoveredClusterPillId.current = hit ? hit.clusterId : null;
+      } else {
+        hoveredClusterPillId.current = null;
+      }
       // Virtual link hover detection (screen-space line hit test)
       if (selectedNode && virtualLinks.length > 0 && graphRef.current) {
         const sel = graphData.nodes.find(n => n.id === selectedNode.id);
@@ -708,6 +764,14 @@ export default function App() {
         onClose={handleBackgroundClick}
         onPlay={setPlayerNode}
         onNavigate={handleNodeClick}
+      />
+
+      <ClusterPanel
+        cluster={selectedCluster}
+        onClose={() => setSelectedCluster(null)}
+        onNavigate={handleNodeClick}
+        allNodes={graphData.nodes}
+        activeLayout={activeLayout}
       />
 
       <ExplorePanel
@@ -873,13 +937,25 @@ export default function App() {
           onRenderFramePre={(ctx, globalScale) => {
             if (Object.keys(clusterMeta).length === 0) return;
 
+            // Resolve which cluster ID field to use for the active layout
+            const layoutClusterField = activeLayout === 'default'
+              ? 'cluster_id'
+              : null; // use cluster_ids map
+
             const clusterGroups = {};
             graphData.nodes.forEach(node => {
-              const cid = node.cluster_id;
+              let cid;
+              if (layoutClusterField) {
+                cid = node[layoutClusterField];
+              } else {
+                cid = node.cluster_ids?.[activeLayout] ?? node.cluster_id;
+              }
               if (cid === null || cid === undefined || cid === -1) return;
               if (!clusterGroups[cid]) clusterGroups[cid] = [];
               clusterGroups[cid].push(node);
             });
+
+            clusterLabelHitboxes.current = [];
 
             Object.entries(clusterGroups).forEach(([cid, nodes]) => {
               if (nodes.length < 2) return;
@@ -900,31 +976,39 @@ export default function App() {
               });
               const radius = maxDist + 48;
 
-              // Soft radial fill — concentrated at center, fading out
-              const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-              gradient.addColorStop(0,   hexToRgba(color, 0.10));
-              gradient.addColorStop(0.55, hexToRgba(color, 0.05));
-              gradient.addColorStop(1,   hexToRgba(color, 0));
+              // Two-layer screen-blend glow — no hard ring
+              // 'screen' compositing adds colored light without darkening, which makes
+              // all hues feel perceptually consistent on the near-black background.
+              ctx.save();
+              ctx.globalCompositeOperation = 'screen';
+
+              // Layer 1: wide ambient haze
+              const outerGrad = ctx.createRadialGradient(cx, cy, radius * 0.15, cx, cy, radius * 1.25);
+              outerGrad.addColorStop(0,    hexToRgba(color, 0.13));
+              outerGrad.addColorStop(0.55, hexToRgba(color, 0.05));
+              outerGrad.addColorStop(1,    hexToRgba(color, 0));
               ctx.beginPath();
-              ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-              ctx.fillStyle = gradient;
+              ctx.arc(cx, cy, radius * 1.25, 0, 2 * Math.PI);
+              ctx.fillStyle = outerGrad;
               ctx.fill();
 
-              // Dashed outer boundary ring
-              ctx.save();
+              // Layer 2: tight inner bloom
+              const innerGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 0.55);
+              innerGrad.addColorStop(0,    hexToRgba(color, 0.28));
+              innerGrad.addColorStop(0.45, hexToRgba(color, 0.12));
+              innerGrad.addColorStop(1,    hexToRgba(color, 0));
               ctx.beginPath();
-              ctx.arc(cx, cy, radius - 4, 0, 2 * Math.PI);
-              ctx.strokeStyle = hexToRgba(color, 0.18);
-              ctx.lineWidth = 1 / globalScale;
-              ctx.setLineDash([5 / globalScale, 9 / globalScale]);
-              ctx.stroke();
-              ctx.setLineDash([]);
+              ctx.arc(cx, cy, radius * 0.55, 0, 2 * Math.PI);
+              ctx.fillStyle = innerGrad;
+              ctx.fill();
+
               ctx.restore();
 
               // Label pill — always visible, scales with zoom
               if (label) {
-                const fontSize = Math.max(8, 10 / globalScale);
-                ctx.font = `500 ${fontSize}px 'Courier New', monospace`;
+                const isHovered = hoveredClusterPillId.current === parseInt(cid);
+                const fontSize = Math.max(8, (isHovered ? 11 : 10) / globalScale);
+                ctx.font = `500 ${fontSize}px Inter, system-ui, sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
 
@@ -944,9 +1028,9 @@ export default function App() {
                 } else {
                   ctx.rect(labelX - pillW / 2, labelY - pillH / 2, pillW, pillH);
                 }
-                ctx.fillStyle = hexToRgba('#050505', 0.75);
+                ctx.fillStyle = isHovered ? hexToRgba(color, 0.08) : hexToRgba('#050505', 0.75);
                 ctx.fill();
-                ctx.strokeStyle = hexToRgba(color, 0.3);
+                ctx.strokeStyle = hexToRgba(color, isHovered ? 0.45 : 0.3);
                 ctx.lineWidth = 1 / globalScale;
                 ctx.stroke();
 
@@ -957,8 +1041,17 @@ export default function App() {
                 ctx.fill();
 
                 // Label text
-                ctx.fillStyle = hexToRgba(color, 0.75);
+                ctx.fillStyle = hexToRgba(color, isHovered ? 0.95 : 0.75);
                 ctx.fillText(label, labelX + padX / 2, labelY);
+
+                // Store hitbox in graph coords for click detection
+                clusterLabelHitboxes.current.push({
+                  clusterId: parseInt(cid),
+                  x: labelX - pillW / 2,
+                  y: labelY - pillH / 2,
+                  w: pillW,
+                  h: pillH,
+                });
               }
             });
           }}

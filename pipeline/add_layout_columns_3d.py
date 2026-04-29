@@ -1,6 +1,6 @@
 """
 One-time migration: add 3D UMAP columns to songs table.
-Adds umap_sonic_x3/y3/z3, umap_vibe_x3/y3/z3, umap_genetics_x3/y3/z3.
+Adds sonic, vibe, decade, dna 3D layout columns (x3/y3/z3).
 Safe to run multiple times (uses IF NOT EXISTS).
 
 Run:
@@ -20,9 +20,12 @@ COLUMNS = [
     "umap_vibe_x3",
     "umap_vibe_y3",
     "umap_vibe_z3",
-    "umap_genetics_x3",
-    "umap_genetics_y3",
-    "umap_genetics_z3",
+    "umap_decade_x3",
+    "umap_decade_y3",
+    "umap_decade_z3",
+    "umap_dna_x3",
+    "umap_dna_y3",
+    "umap_dna_z3",
 ]
 
 conn = psycopg.connect(DATABASE_URL)

@@ -556,13 +556,51 @@ def main():
     cur.close()
     conn.close()
 
-    # ─── Step 5: Clusters ───
-    print("\nStep 5: Detecting clusters...")
+    # ─── Step 5: Clusters (legacy default layout) ───
+    print("\nStep 5: Detecting clusters (default layout)...")
     detect_clusters_for_collection(collection_id)
+
+    # ─── Step 6: Multi-layout UMAP ───
+    print("\nStep 6: Computing multi-layout UMAP (sonic / vibe / decade / dna)...")
+    try:
+        import subprocess
+        pipeline_dir = os.path.dirname(os.path.abspath(__file__))
+        python = sys.executable
+
+        result = subprocess.run(
+            [python, os.path.join(pipeline_dir, "run_umap_layouts.py"), "--collection", collection_id],
+            cwd=os.path.dirname(pipeline_dir),
+            capture_output=False,
+        )
+        if result.returncode != 0:
+            print("  Warning: run_umap_layouts.py exited with errors")
+
+        result = subprocess.run(
+            [python, os.path.join(pipeline_dir, "run_umap_layouts_3d.py"), "--collection", collection_id],
+            cwd=os.path.dirname(pipeline_dir),
+            capture_output=False,
+        )
+        if result.returncode != 0:
+            print("  Warning: run_umap_layouts_3d.py exited with errors")
+    except Exception as e:
+        print(f"  Warning: multi-layout UMAP failed: {e}")
+
+    # ─── Step 7: Per-layout clusters with AI reasoning ───
+    print("\nStep 7: Detecting per-layout clusters with AI descriptions...")
+    try:
+        result = subprocess.run(
+            [python, os.path.join(pipeline_dir, "detect_clusters_per_layout.py"), "--collection", collection_id],
+            cwd=os.path.dirname(pipeline_dir),
+            capture_output=False,
+        )
+        if result.returncode != 0:
+            print("  Warning: detect_clusters_per_layout.py exited with errors")
+    except Exception as e:
+        print(f"  Warning: per-layout clustering failed: {e}")
 
     # ─── Done ───
     print(f"\n{'='*60}")
-    print(f"  ✓ Collection '{collection_name}' ready!")
+    print(f"  Collection '{collection_name}' ready!")
     print(f"  URL: http://localhost:5173?collection={collection_id}")
     print(f"{'='*60}\n")
 

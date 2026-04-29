@@ -90,6 +90,13 @@ export function computeMatches(filter, selectedNode, allNodes, allLinks) {
     case 'artist':
       allNodes.forEach(n => { if (n.id !== selId && n.artist === value) matches.add(n.id); });
       break;
+    case 'gear':
+      allNodes.forEach(n => {
+        if (n.id === selId) return;
+        const credits = n.sonic_dna?.instrument_credits || [];
+        if (credits.some(c => [c.make, c.model].filter(Boolean).join(' ') === value)) matches.add(n.id);
+      });
+      break;
     case 'nearby_adjacent': {
       if (selectedNode.x === undefined) break;
       const sorted = allNodes
@@ -515,6 +522,11 @@ const ExplorePanel = ({
     if (selectedNode.genetic_dna?.producer) { const pr = selectedNode.genetic_dna.producer; countFor(`producer:${pr}`, n => n.genetic_dna?.producer === pr); }
     (selectedNode.genetic_dna?.songwriter || []).forEach(sw => countFor(`songwriter:${sw}`, n => (n.genetic_dna?.songwriter || []).includes(sw)));
     if (selectedNode.genetic_dna?.mixing_engineer) { const me = selectedNode.genetic_dna.mixing_engineer; countFor(`mixing_engineer:${me}`, n => n.genetic_dna?.mixing_engineer === me); }
+    (selectedNode.sonic_dna?.instrument_credits || []).forEach(credit => {
+      if (!credit.make && !credit.model) return;
+      const gv = [credit.make, credit.model].filter(Boolean).join(' ');
+      countFor(`gear:${gv}`, n => (n.sonic_dna?.instrument_credits || []).some(c => [c.make, c.model].filter(Boolean).join(' ') === gv));
+    });
     return counts;
   }, [selectedNode, allNodes]);
 
@@ -562,6 +574,7 @@ const ExplorePanel = ({
     if (filter.type === 'cluster') return 'Same Cluster';
     if (filter.type === 'connection') return filter.value?.replace(/_/g, ' ');
     if (filter.type === 'bpm') return `~${filter.value} BPM`;
+    if (filter.type === 'gear') return filter.value;
     return filter.value !== undefined ? String(filter.value) : filter.type;
   };
 
@@ -931,6 +944,34 @@ const ExplorePanel = ({
                       </div>
                     </div>
                   )}
+
+                  {/* Gear — only interesting credits (have make or model) */}
+                  {(selectedNode.sonic_dna?.instrument_credits || []).some(c => c.make || c.model) && (() => {
+                    const interesting = (selectedNode.sonic_dna.instrument_credits || []).filter(c => c.make || c.model);
+                    return (
+                      <div>
+                        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500, color: CHIP_COLORS.instr.text, marginBottom: 7, opacity: 0.7 }}>Gear</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                          {interesting.map((credit, i) => {
+                            const gv = [credit.make, credit.model].filter(Boolean).join(' ');
+                            const label = credit.player ? `${gv} · ${credit.player}` : gv;
+                            return (
+                              <Chip
+                                key={i}
+                                type="gear"
+                                value={gv}
+                                label={label}
+                                count={attrCounts[`gear:${gv}`] ?? 0}
+                                colors={CHIP_COLORS.instr}
+                                activeFilters={activeFilters}
+                                onToggleFilter={onToggleFilter}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* People & Places */}
                   {hasPeopleAndPlaces && (

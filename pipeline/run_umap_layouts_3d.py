@@ -1,7 +1,7 @@
 """
 Generate 3D UMAP layouts (n_components=3) from structured song features.
-Runs the same three layout types as run_umap_layouts.py but outputs x/y/z.
-Writes to umap_sonic_x3/y3/z3, umap_vibe_x3/y3/z3, umap_genetics_x3/y3/z3.
+Runs the same layout types as run_umap_layouts.py but outputs x/y/z.
+Writes to umap_sonic_x3/y3/z3, umap_vibe_x3/y3/z3, umap_decade_x3/y3/z3, umap_dna_x3/y3/z3.
 
 Run:
   python pipeline/run_umap_layouts_3d.py [--collection default] [--dry-run]
@@ -19,7 +19,8 @@ from dotenv import load_dotenv
 from run_umap_layouts import (
     build_sonic_features,
     build_vibe_features,
-    build_genetics_features,
+    build_decade_features,
+    build_dna_features,
     normalize_coords,
 )
 
@@ -61,7 +62,8 @@ def run(collection_id="default", dry_run=False):
                vocal_type, rhythm_feel,
                bass_weight, mid_weight, treble_weight,
                mood, themes,
-               producer, label, studio
+               producer, label, studio,
+               songwriter, mixing_engineer
         FROM songs
         WHERE collection_id = %s
     """, (collection_id,))
@@ -74,6 +76,7 @@ def run(collection_id="default", dry_run=False):
         "bass_weight", "mid_weight", "treble_weight",
         "mood", "themes",
         "producer", "label", "studio",
+        "songwriter", "mixing_engineer",
     ]
     songs = [dict(zip(cols, r)) for r in rows]
     print(f"\nLoaded {len(songs)} songs from collection '{collection_id}'")
@@ -89,37 +92,47 @@ def run(collection_id="default", dry_run=False):
     print("\n[1/3] Building SONIC 3D layout...")
     try:
         sonic_feat = build_sonic_features(songs)
-        sonic_coords = run_umap_3d(sonic_feat, label="sonic-3d", min_dist=0.05)
+        sonic_coords = run_umap_3d(sonic_feat, label="sonic-3d", min_dist=0.6, n_neighbors=40)
         if sonic_coords is not None:
             layouts["sonic"] = sonic_coords
     except Exception as e:
         print(f"  ✗ Sonic 3D layout failed: {e}")
 
     # ── Vibe 3D ────────────────────────────────────────────────────────────
-    print("\n[2/3] Building VIBE 3D layout...")
+    print("\n[2/4] Building VIBE 3D layout...")
     try:
         vibe_feat = build_vibe_features(songs)
-        vibe_coords = run_umap_3d(vibe_feat, label="vibe-3d", min_dist=0.1, metric="jaccard")
+        vibe_coords = run_umap_3d(vibe_feat, label="vibe-3d", min_dist=0.6, n_neighbors=40, metric="jaccard")
         if vibe_coords is not None:
             layouts["vibe"] = vibe_coords
     except Exception as e:
         print(f"  ✗ Vibe 3D layout failed (retrying with euclidean): {e}")
         try:
-            vibe_coords2 = run_umap_3d(build_vibe_features(songs), label="vibe-3d-fallback", min_dist=0.1)
+            vibe_coords2 = run_umap_3d(build_vibe_features(songs), label="vibe-3d-fallback", min_dist=0.6, n_neighbors=40)
             if vibe_coords2 is not None:
                 layouts["vibe"] = vibe_coords2
         except Exception as e2:
             print(f"  ✗ Vibe 3D fallback also failed: {e2}")
 
-    # ── Genetics 3D ────────────────────────────────────────────────────────
-    print("\n[3/3] Building GENETICS 3D layout...")
+    # ── Decade 3D ──────────────────────────────────────────────────────────
+    print("\n[3/4] Building DECADE 3D layout...")
     try:
-        gen_feat = build_genetics_features(songs)
-        gen_coords = run_umap_3d(gen_feat, label="genetics-3d", min_dist=0.08)
-        if gen_coords is not None:
-            layouts["genetics"] = gen_coords
+        decade_feat = build_decade_features(songs)
+        decade_coords = run_umap_3d(decade_feat, label="decade-3d", min_dist=0.4, n_neighbors=30)
+        if decade_coords is not None:
+            layouts["decade"] = decade_coords
     except Exception as e:
-        print(f"  ✗ Genetics 3D layout failed: {e}")
+        print(f"  ✗ Decade 3D layout failed: {e}")
+
+    # ── DNA 3D ─────────────────────────────────────────────────────────────
+    print("\n[4/4] Building DNA 3D layout...")
+    try:
+        dna_feat = build_dna_features(songs)
+        dna_coords = run_umap_3d(dna_feat, label="dna-3d", min_dist=0.08)
+        if dna_coords is not None:
+            layouts["dna"] = dna_coords
+    except Exception as e:
+        print(f"  ✗ DNA 3D layout failed: {e}")
 
     # ── Write to DB ────────────────────────────────────────────────────────
     if dry_run:
