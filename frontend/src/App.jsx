@@ -132,6 +132,31 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState(null);
   const [searchActive, setSearchActive] = useState(false);
   const [playerNode, setPlayerNode] = useState(null);
+
+  useEffect(() => {
+    if (!playerNode) return;
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    fetch(`${API_BASE}/api/now-playing`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: playerNode.id,
+        name: playerNode.name,
+        artist: playerNode.artist,
+        album: playerNode.album,
+        img: playerNode.img,
+        year: playerNode.year,
+        primary_color: playerNode.visual_dna?.primary_color,
+        palette: playerNode.visual_dna?.palette || [],
+        bpm: playerNode.sonic_dna?.bpm,
+        key: playerNode.sonic_dna?.key,
+        mode: playerNode.sonic_dna?.mode,
+        mood: playerNode.semantic_dna?.mood || [],
+        energy: playerNode.sonic_dna?.energy,
+      }),
+    }).catch(() => {});
+  }, [playerNode]);
+
   const [hoveredLink, setHoveredLink] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [activeFilters, setActiveFilters] = useState(new Map());

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=800, initial-scale=1.0">
+  <title>Resonant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 800px;
+      height: 1280px;
+      overflow: hidden;
+      background: #050505;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: #fff;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      cursor: none;
+    }
+
+    #app {
+      position: relative;
+      width: 800px;
+      height: 1280px;
+      overflow: hidden;
+    }
+
+    /* ── CSS variables set by JS ────────────────────────────────── */
+    :root {
+      --accent: #888888;
+      --accent-bg: rgba(136,136,136,0.10);
+      --accent-border: rgba(136,136,136,0.25);
+      --accent-text: rgba(136,136,136,0.85);
+    }
+
+    /* ── Background blob layer ──────────────────────────────────── */
+    #bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(110px);
+      opacity: 0;
+      transition: background-color 2.2s ease, opacity 2.2s ease;
+    }
+
+    /* Blob 1: large haze behind the album art */
+    #blob1 { width: 700px; height: 700px; top: -80px; left: 50px; }
+    /* Blob 2: lower-left accent */
+    #blob2 { width: 440px; height: 440px; bottom: 60px; left: -140px; }
+    /* Blob 3: upper-right edge accent */
+    #blob3 { width: 300px; height: 300px; top: 320px; right: -90px; }
+
+    /* ── Idle state ─────────────────────────────────────────────── */
+    #idle {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #050505;
+      transition: opacity 0.7s ease;
+    }
+
+    #idle.fade-out { opacity: 0; pointer-events: none; }
+
+    #idle-title {
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      color: rgba(255,255,255,0.055);
+      animation: breathe 5s ease-in-out infinite;
+    }
+
+    #idle-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      margin-top: 22px;
+      animation: breathe 5s ease-in-out infinite 0.6s;
+    }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 0.45; transform: scale(1); }
+      50%       { opacity: 1;    transform: scale(1.05); }
+    }
+
+    /* ── Now-playing screen ─────────────────────────────────────── */
+    #screen {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 72px 80px 60px;
+      opacity: 0;
+      transition: opacity 0.45s ease;
+    }
+
+    #screen.visible { opacity: 1; }
+    #screen.fade-out { opacity: 0; }
+
+    /* ── Album art ──────────────────────────────────────────────── */
+    #art-wrap {
+      position: relative;
+      width: 640px;
+      height: 640px;
+      flex-shrink: 0;
+      margin-bottom: 52px;
+    }
+
+    #art-glow {
+      position: absolute;
+      inset: -28px;
+      border-radius: 22px;
+      filter: blur(64px);
+      opacity: 0;
+      transition: background-color 2s ease, opacity 2s ease;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    #art {
+      position: relative;
+      z-index: 1;
+      width: 640px;
+      height: 640px;
+      object-fit: cover;
+      border-radius: 14px;
+      box-shadow:
+        0 56px 130px rgba(0,0,0,0.88),
+        0 12px 40px  rgba(0,0,0,0.55);
+      display: block;
+      background: #111;
+    }
+
+    /* ── Info section ───────────────────────────────────────────── */
+    #info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      gap: 0;
+      padding-bottom: 8px;
+    }
+
+    #song-title {
+      font-size: 40px;
+      font-weight: 700;
+      letter-spacing: -0.026em;
+      line-height: 1.12;
+      text-align: center;
+      color: rgba(255,255,255,0.94);
+      margin-bottom: 14px;
+      max-width: 640px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    #artist-name {
+      font-size: 24px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.45);
+      text-align: center;
+      margin-bottom: 9px;
+      max-width: 640px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #album-info {
+      font-size: 15px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.2);
+      text-align: center;
+      letter-spacing: 0.01em;
+      max-width: 640px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Bottom section ─────────────────────────────────────────── */
+    #bottom {
+      flex-shrink: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+    }
+
+    #divider {
+      width: 100%;
+      height: 1px;
+      background: var(--accent);
+      opacity: 0.18;
+      transition: background-color 2s ease;
+    }
+
+    #pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      max-width: 640px;
+      min-height: 34px;
+    }
+
+    .pill {
+      padding: 7px 18px;
+      border-radius: 24px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.3);
+    }
+
+    .pill.mood {
+      background: var(--accent-bg);
+      border-color: var(--accent-border);
+      color: var(--accent-text);
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div id="bg">
+    <div class="blob" id="blob1"></div>
+    <div class="blob" id="blob2"></div>
+    <div class="blob" id="blob3"></div>
+  </div>
+
+  <div id="idle">
+    <div id="idle-title">Resonant</div>
+    <div id="idle-dot"></div>
+  </div>
+
+  <div id="screen">
+    <div id="art-wrap">
+      <div id="art-glow"></div>
+      <img id="art" src="" alt="">
+    </div>
+    <div id="info">
+      <div id="song-title"></div>
+      <div id="artist-name"></div>
+      <div id="album-info"></div>
+    </div>
+    <div id="bottom">
+      <div id="divider"></div>
+      <div id="pills"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+  const POLL_MS = 2500;
+  let currentId   = null;
+  let transitioning = false;
+
+  const $  = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // ── Color utilities ──────────────────────────────────────────────
+
+  function hexToRgba(hex, a) {
+    if (!hex || hex.length < 7) return `rgba(136,136,136,${a})`;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  function applyTheme(primary, palette) {
+    const p   = primary || '#888888';
+    const pal = (palette && palette.length >= 3) ? palette : [p, '#444444', '#222222'];
+
+    const root = document.documentElement;
+    root.style.setProperty('--accent',        p);
+    root.style.setProperty('--accent-bg',     hexToRgba(p, 0.10));
+    root.style.setProperty('--accent-border', hexToRgba(p, 0.25));
+    root.style.setProperty('--accent-text',   hexToRgba(p, 0.85));
+
+    // Art glow
+    $('art-glow').style.backgroundColor = p;
+    $('art-glow').style.opacity          = '0.38';
+
+    // Background blobs
+    $('blob1').style.backgroundColor = pal[0];
+    $('blob1').style.opacity          = '0.19';
+    $('blob2').style.backgroundColor  = pal[1] || pal[0];
+    $('blob2').style.opacity           = '0.13';
+    $('blob3').style.backgroundColor   = pal[2] || p;
+    $('blob3').style.opacity            = '0.09';
+  }
+
+  function clearTheme() {
+    $('blob1').style.opacity    = '0';
+    $('blob2').style.opacity    = '0';
+    $('blob3').style.opacity    = '0';
+    $('art-glow').style.opacity = '0';
+  }
+
+  // ── DOM rendering ────────────────────────────────────────────────
+
+  function renderSong(song) {
+    $('art').src           = song.img    || '';
+    $('song-title').textContent  = song.name   || '';
+    $('artist-name').textContent = song.artist || '';
+
+    const meta = [song.album, song.year].filter(Boolean);
+    $('album-info').textContent = meta.join(' · ');
+
+    applyTheme(song.primary_color, song.palette);
+
+    // Pills
+    const pillsEl = $('pills');
+    pillsEl.innerHTML = '';
+
+    const items = [];
+    if (song.bpm)  items.push({ text: `${Math.round(song.bpm)} BPM`, cls: '' });
+    if (song.key)  items.push({ text: song.key,  cls: '' });
+    if (song.mode && song.mode !== song.key) items.push({ text: song.mode, cls: '' });
+    if (Array.isArray(song.mood)) {
+      song.mood.slice(0, 3).forEach(m => items.push({ text: m, cls: 'mood' }));
+    }
+
+    items.forEach(({ text, cls }) => {
+      const el = document.createElement('span');
+      el.className = 'pill' + (cls ? ` ${cls}` : '');
+      el.textContent = text;
+      pillsEl.appendChild(el);
+    });
+  }
+
+  // ── Transitions ──────────────────────────────────────────────────
+
+  async function showSong(song) {
+    if (transitioning) return;
+    transitioning = true;
+
+    const screen = $('screen');
+    const idle   = $('idle');
+    const fromIdle = !idle.classList.contains('fade-out');
+
+    if (fromIdle) {
+      // Idle → Song: render first, then cross-fade
+      renderSong(song);
+      screen.style.display = 'flex';
+      await sleep(20); // let browser paint
+      screen.classList.add('visible');
+      idle.classList.add('fade-out');
+      await sleep(750);
+      idle.style.display = 'none';
+    } else {
+      // Song → Song: fade out, swap, fade in
+      screen.classList.add('fade-out');
+      screen.classList.remove('visible');
+      await sleep(420);
+      renderSong(song);
+      screen.classList.remove('fade-out');
+      screen.classList.add('visible');
+      await sleep(650);
+    }
+
+    transitioning = false;
+  }
+
+  async function showIdle() {
+    if (transitioning) return;
+    transitioning = true;
+
+    const screen = $('screen');
+    const idle   = $('idle');
+
+    idle.style.display = 'flex';
+    idle.style.opacity = '0';
+    idle.classList.remove('fade-out');
+
+    screen.classList.add('fade-out');
+    screen.classList.remove('visible');
+
+    clearTheme();
+
+    await sleep(100);
+    idle.style.opacity = '';   // let CSS transition take over
+    await sleep(700);
+
+    screen.style.display = 'none';
+    screen.classList.remove('fade-out');
+
+    transitioning = false;
+  }
+
+  // ── Polling ──────────────────────────────────────────────────────
+
+  async function poll() {
+    try {
+      const res  = await fetch('/api/now-playing', { cache: 'no-store' });
+      const data = await res.json();
+      const hasSong = data && data.id;
+
+      if (!hasSong && currentId !== null) {
+        currentId = null;
+        await showIdle();
+      } else if (hasSong && data.id !== currentId) {
+        currentId = data.id;
+        await showSong(data);
+      }
+    } catch {
+      // Network error — keep current state
+    }
+  }
+
+  poll();
+  setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>

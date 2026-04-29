@@ -1,0 +1,12 @@
+{
+  "name": "resonant-pi-display",
+  "version": "1.0.0",
+  "description": "Now Playing display for Raspberry Pi — Resonant companion",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

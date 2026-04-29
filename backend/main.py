@@ -13,12 +13,26 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 app = FastAPI(title="Resonant API", version="0.1.0")
 
+now_playing_state = {}
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.post("/api/now-playing")
+def set_now_playing(body: dict = Body(...)):
+    global now_playing_state
+    now_playing_state = body
+    return {"ok": True}
+
+
+@app.get("/api/now-playing")
+def get_now_playing():
+    return now_playing_state
 
 
 @app.get("/")
