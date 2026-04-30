@@ -341,6 +341,7 @@ def get_song(song_id: str):
 
 @app.get("/api/clusters")
 def get_clusters(collection: str = "default", layout: str = ""):
+    # Try local files first (dev environment)
     candidates = []
     if layout:
         candidates.append(f"pipeline/output/clusters_{collection}_{layout}.json")
@@ -354,6 +355,24 @@ def get_clusters(collection: str = "default", layout: str = ""):
                 return json.load(f)
         except FileNotFoundError:
             continue
+
+    # Fall back to DB (production / Render)
+    layout_key = layout if layout else "default"
+    try:
+        conn = psycopg.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT data FROM cluster_snapshots WHERE collection_id = %s AND layout = %s",
+            (collection, layout_key),
+        )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            return row[0]
+    except Exception:
+        pass
+
     return {"clusters": [], "unclustered_count": 0, "total_songs": 0}
 
 

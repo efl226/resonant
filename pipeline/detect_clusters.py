@@ -251,8 +251,31 @@ def detect_clusters(collection_id=None):
     filename = f'pipeline/output/clusters_{collection_id}.json' if collection_id else 'pipeline/output/clusters.json'
     with open(filename, 'w') as f:
         json.dump(output, f, indent=2)
-
     print(f"\n✓ Saved {n_clusters} clusters to {filename}")
+
+    # Also persist to DB so Render can serve it without local files
+    layout_key = collection_id or "default"
+    try:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS cluster_snapshots (
+                collection_id TEXT NOT NULL,
+                layout TEXT NOT NULL,
+                data JSONB NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW(),
+                PRIMARY KEY (collection_id, layout)
+            )
+        """)
+        cur.execute("""
+            INSERT INTO cluster_snapshots (collection_id, layout, data)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (collection_id, layout) DO UPDATE
+                SET data = EXCLUDED.data, created_at = NOW()
+        """, (layout_key, "default", json.dumps(output)))
+        conn.commit()
+        print(f"✓ Persisted to DB (cluster_snapshots: {layout_key}/default)")
+    except Exception as e:
+        conn.rollback()
+        print(f"  Warning: could not persist to DB: {e}")
 
     cur.close()
     conn.close()

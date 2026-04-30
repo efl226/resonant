@@ -314,6 +314,30 @@ def detect_layout_clusters(collection_id, layout, conn, cur):
 
     n_clusters = len(clusters_data)
     print(f"  ✓ Saved {n_clusters} clusters → {filename}")
+
+    # Also persist to DB so Render can serve it without local files
+    try:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS cluster_snapshots (
+                collection_id TEXT NOT NULL,
+                layout TEXT NOT NULL,
+                data JSONB NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW(),
+                PRIMARY KEY (collection_id, layout)
+            )
+        """)
+        cur.execute("""
+            INSERT INTO cluster_snapshots (collection_id, layout, data)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (collection_id, layout) DO UPDATE
+                SET data = EXCLUDED.data, created_at = NOW()
+        """, (collection_id, layout, json.dumps(output)))
+        conn.commit()
+        print(f"  ✓ Persisted to DB (cluster_snapshots: {collection_id}/{layout})")
+    except Exception as e:
+        conn.rollback()
+        print(f"  Warning: could not persist to DB: {e}")
+
     return output
 
 
