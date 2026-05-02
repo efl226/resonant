@@ -181,7 +181,7 @@ def _build_nodes(rows, has_new_layout_cols: bool):
             "lyrics_preview": lyrics_preview,
             "has_lyrics": lyrics_full is not None,
             "is_live": row[44],
-            "spotify_uri": row[45],
+            "spotify_uri": row[45] or (f"spotify:track:{row[0][3:]}" if str(row[0]).startswith("sp-") else None),
             "cluster_id": row[46],
             "cluster_ids": cluster_ids,
             "umap_x": row[23], "umap_y": row[24],
@@ -456,6 +456,17 @@ def filter_direct(filters: dict, collection: str = "default"):
     if filters.get("instrument_model"):
         conditions.append("EXISTS (SELECT 1 FROM jsonb_array_elements(instrument_credits) AS ic WHERE ic->>'model' ILIKE %s)")
         params.append(f"%{filters['instrument_model']}%")
+    if filters.get("gear"):
+        conditions.append("EXISTS (SELECT 1 FROM jsonb_array_elements(instrument_credits) AS ic WHERE concat_ws(' ', ic->>'make', ic->>'model') ILIKE %s)")
+        params.append(f"%{filters['gear']}%")
+    if filters.get("mb_location"):
+        conditions.append("mb_credits->>'location' ILIKE %s")
+        params.append(f"%{filters['mb_location']}%")
+    if filters.get("mb_credit"):
+        names = filters["mb_credit"] if isinstance(filters["mb_credit"], list) else [filters["mb_credit"]]
+        for name in names:
+            conditions.append("EXISTS (SELECT 1 FROM jsonb_array_elements(mb_credits->'credits') AS c WHERE c->>'name' ILIKE %s)")
+            params.append(f"%{name}%")
     if filters.get("decade"):
         decade_map = {
             "60s": (1960, 1969), "1960s": (1960, 1969),

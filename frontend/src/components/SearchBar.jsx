@@ -298,7 +298,7 @@ const SearchBar = ({ data, onSelect, onSearchResults, onReset, searchActive }) =
       const updated = { ...breadcrumbs };
       
       // Array-type filters: instruments, mood, themes
-      if (['instruments', 'mood', 'themes'].includes(key)) {
+      if (['instruments', 'mood', 'themes', 'mb_credit'].includes(key)) {
         if (!updated[key]) {
           updated[key] = [value];
         } else if (!updated[key].includes(value)) {

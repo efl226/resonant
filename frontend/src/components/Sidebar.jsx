@@ -107,7 +107,7 @@ const addTagInputStyle = {
 };
 
 const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
-  const [showLyrics, setShowLyrics] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [localEdits, setLocalEdits] = useState({});
@@ -266,20 +266,29 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
     <div style={{ ...shellStyle, overflowY: 'auto' }}>
 
       {/* Top controls */}
-      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', alignItems: 'center', gap: 8, zIndex: 10 }}>
+      <div style={{
+        position: 'absolute', top: 14, right: 14,
+        display: 'flex', alignItems: 'center', gap: 6, zIndex: 10,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderRadius: 24,
+        padding: '5px 8px',
+        border: '1px solid rgba(255,255,255,0.1)',
+      }}>
         {/* Edit toggle */}
         <button
           onClick={() => setEditMode(m => !m)}
           style={{
-            width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: editMode ? `rgba(${accentRgb}, 0.12)` : 'rgba(255,255,255,0.04)',
-            border: editMode ? `1px solid rgba(${accentRgb}, 0.35)` : '1px solid rgba(255,255,255,0.07)',
-            color: editMode ? `rgba(${accentRgb}, 0.9)` : 'rgba(255,255,255,0.3)',
+            width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: editMode ? `rgba(${accentRgb}, 0.25)` : 'transparent',
+            border: editMode ? `1px solid rgba(${accentRgb}, 0.5)` : '1px solid transparent',
+            color: editMode ? `rgba(${accentRgb}, 1)` : 'rgba(255,255,255,0.7)',
             cursor: 'pointer', fontSize: 13,
             transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { if (!editMode) { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; } }}
-          onMouseLeave={e => { if (!editMode) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; } }}
+          onMouseEnter={e => { if (!editMode) { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,1)'; } }}
+          onMouseLeave={e => { if (!editMode) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; } }}
           title={editMode ? 'Done editing' : 'Edit this song\'s info'}
         >{editMode ? '✓' : '✎'}</button>
 
@@ -287,13 +296,13 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
         <button
           onClick={() => setCollapsed(true)}
           style={{
-            width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
-            color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 14,
+            width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent', border: '1px solid transparent',
+            color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: 14,
             transition: 'background 0.15s, color 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,1)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
           title="Collapse sidebar"
         >›</button>
 
@@ -301,13 +310,13 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
         <button
           onClick={onClose}
           style={{
-            width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
-            color: `rgba(${accentRgb}, 0.45)`, cursor: 'pointer', fontSize: 18,
+            width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent', border: '1px solid transparent',
+            color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: 18,
             transition: 'background 0.15s, color 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = `rgba(${accentRgb}, 0.9)`; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = `rgba(${accentRgb}, 0.45)`; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = `rgba(${accentRgb}, 1)`; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
           title="Close"
         >×</button>
       </div>
@@ -542,7 +551,7 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                       className="flex items-baseline gap-3 py-1.5 text-xs"
                       style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
                     >
-                      <span className="text-white/30 text-[10px] uppercase tracking-wider flex-shrink-0 w-20 truncate">{credit.instrument}</span>
+                      <span className="text-white/30 text-[10px] uppercase tracking-wider flex-shrink-0 w-20 leading-snug">{credit.instrument}</span>
                       <span
                         className="text-white/75 font-medium cursor-pointer hover:text-white transition-colors flex-1"
                         onClick={() => addFilter('gear', gearVal)}
@@ -716,13 +725,22 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
 
               {/* Recording info line */}
               {(node.mb_credits.location || node.mb_credits.begin) && (
-                <div className="text-[11px] text-white/35 italic mb-3">
-                  {[
-                    node.mb_credits.location,
-                    node.mb_credits.begin && node.mb_credits.end && node.mb_credits.begin !== node.mb_credits.end
-                      ? `${node.mb_credits.begin} – ${node.mb_credits.end}`
-                      : node.mb_credits.begin || node.mb_credits.end,
-                  ].filter(Boolean).join(' · ')}
+                <div className="text-[11px] text-white/35 italic mb-3 flex flex-wrap gap-1 items-center">
+                  {node.mb_credits.location && (
+                    <span
+                      className="cursor-pointer hover:text-white/70 transition-colors"
+                      onClick={() => addFilter('mb_location', node.mb_credits.location)}
+                      title={`Filter: recorded at ${node.mb_credits.location}`}
+                    >{node.mb_credits.location}</span>
+                  )}
+                  {node.mb_credits.location && (node.mb_credits.begin || node.mb_credits.end) && <span>·</span>}
+                  {(node.mb_credits.begin || node.mb_credits.end) && (
+                    <span>
+                      {node.mb_credits.begin && node.mb_credits.end && node.mb_credits.begin !== node.mb_credits.end
+                        ? `${node.mb_credits.begin} – ${node.mb_credits.end}`
+                        : node.mb_credits.begin || node.mb_credits.end}
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -741,11 +759,22 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
                     {Object.entries(grouped).map(([role, names], i, arr) => (
                       <div
                         key={i}
-                        className="flex items-baseline gap-3 py-1.5 text-xs"
+                        className="flex items-start gap-3 py-1.5 text-xs"
                         style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
                       >
-                        <span className="text-white/30 text-[10px] uppercase tracking-wider flex-shrink-0 w-28 truncate">{role}</span>
-                        <span className="text-white/75 flex-1">{names.join(', ')}</span>
+                        <span className="text-white/30 text-[10px] uppercase tracking-wider flex-shrink-0 w-28 leading-snug">{role}</span>
+                        <span className="text-white/75 flex-1 break-words">
+                          {names.map((name, ni) => (
+                            <span key={ni}>
+                              {ni > 0 && ', '}
+                              <span
+                                className="cursor-pointer hover:text-white transition-colors"
+                                onClick={() => addFilter('mb_credit', name)}
+                                title={`Filter by: ${name}`}
+                              >{name}</span>
+                            </span>
+                          ))}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -759,22 +788,69 @@ const Sidebar = ({ node, links, onClose, onPlay, onNavigate }) => {
             <section>
               <button
                 onClick={() => setShowLyrics(!showLyrics)}
-                className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3 flex items-center gap-2 cursor-pointer hover:opacity-80"
-                style={{ color: `rgba(${accentRgb}, 0.4)` }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center',
+                  justifyContent: 'space-between', background: 'none',
+                  border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10,
+                }}
               >
-                Lyrics {showLyrics ? '▾' : '▸'}
+                <span style={{
+                  fontSize: 10, fontWeight: 700, letterSpacing: '0.2em',
+                  textTransform: 'uppercase', color: `rgba(${accentRgb}, 0.5)`,
+                }}>Lyrics</span>
+                <span style={{
+                  color: `rgba(${accentRgb}, 0.4)`, fontSize: 13,
+                  transition: 'transform 0.2s ease',
+                  transform: showLyrics ? 'rotate(180deg)' : 'rotate(0deg)',
+                  display: 'inline-block',
+                }}>▾</span>
               </button>
+
               {showLyrics && (
-                <pre
-                  className="text-xs text-white/30 leading-relaxed whitespace-pre-wrap font-sans overflow-y-auto"
-                  style={{
-                    maxHeight: 400,
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: `rgba(${accentRgb}, 0.2) transparent`,
-                  }}
-                >
-                  {node.lyrics || node.lyrics_preview}
-                </pre>
+                <div style={{
+                  borderRadius: 10,
+                  border: `1px solid rgba(${accentRgb}, 0.1)`,
+                  backgroundColor: `rgba(${accentRgb}, 0.03)`,
+                  maxHeight: 440,
+                  overflowY: 'auto',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: `rgba(${accentRgb}, 0.2) transparent`,
+                  padding: '14px 16px',
+                }}>
+                  {(node.lyrics || node.lyrics_preview).split('\n').map((line, i) => {
+                    const isHeader = /^\[.+\]$/.test(line.trim());
+                    const isEmpty = line.trim() === '';
+
+                    if (isHeader) return (
+                      <div key={i} style={{
+                        color: `rgba(${accentRgb}, 0.8)`,
+                        fontSize: 9,
+                        fontWeight: 700,
+                        letterSpacing: '0.14em',
+                        textTransform: 'uppercase',
+                        marginTop: i > 0 ? 22 : 0,
+                        marginBottom: 8,
+                        paddingBottom: 5,
+                        borderBottom: `1px solid rgba(${accentRgb}, 0.15)`,
+                      }}>
+                        {line.trim().replace(/[\[\]]/g, '')}
+                      </div>
+                    );
+
+                    if (isEmpty) return <div key={i} style={{ height: 5 }} />;
+
+                    return (
+                      <div key={i} style={{
+                        color: 'rgba(255,255,255,0.58)',
+                        fontSize: 12,
+                        lineHeight: 1.8,
+                        fontFamily: 'Inter, system-ui, sans-serif',
+                      }}>
+                        {line}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </section>
           )}

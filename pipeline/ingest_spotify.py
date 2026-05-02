@@ -106,11 +106,11 @@ For instrument_credits: include every instrument you can identify. Be specific a
 
 def fetch_playlist_tracks(playlist_url):
     """Fetch all tracks from a Spotify playlist URL. Returns list of track dicts."""
-    # Extract playlist ID from URL
     playlist_id = playlist_url.split("/playlist/")[-1].split("?")[0]
     print(f"  Fetching playlist: {playlist_id}")
 
-    tracks = []
+    # Pass 1: collect track data without genres (OAuth required — Spotify dropped public playlist access for client creds Nov 2024)
+    raw_tracks = []
     results = sp.playlist_items(playlist_id, limit=50)
     while results:
         for item in results["items"]:
@@ -120,13 +120,7 @@ def fetch_playlist_tracks(playlist_url):
             duration_ms = track.get("duration_ms", 0)
             mins = duration_ms // 60000
             secs = (duration_ms % 60000) // 1000
-            try:
-                artist_id = track["artists"][0]["id"]
-                artist_info = sp_cc.artist(artist_id)
-                genres = artist_info.get("genres", [])
-            except Exception:
-                genres = []
-            tracks.append({
+            raw_tracks.append({
                 "name": track["name"],
                 "artist": ", ".join([a["name"] for a in track["artists"]]),
                 "album": track["album"]["name"],
@@ -136,9 +130,29 @@ def fetch_playlist_tracks(playlist_url):
                 "spotify_uri": track["uri"],
                 "spotify_url": track["external_urls"].get("spotify", ""),
                 "isrc": (track.get("external_ids") or {}).get("isrc"),
-                "genres": genres,
+                "artist_id": track["artists"][0]["id"] if track["artists"] else None,
             })
         results = sp.next(results) if results.get("next") else None
+
+    # Pass 2: batch-fetch genres — sp_cc.artists() accepts up to 50 IDs per call
+    unique_ids = list({t["artist_id"] for t in raw_tracks if t["artist_id"]})
+    genres_map = {}
+    BATCH = 50
+    print(f"  Fetching genres for {len(unique_ids)} unique artists ({(len(unique_ids)-1)//BATCH+1 if unique_ids else 0} request(s))...")
+    for i in range(0, len(unique_ids), BATCH):
+        try:
+            result = sp_cc.artists(unique_ids[i:i + BATCH])
+            for artist in result["artists"]:
+                if artist:
+                    genres_map[artist["id"]] = artist.get("genres", [])
+        except Exception:
+            pass
+
+    tracks = [
+        {**{k: v for k, v in t.items() if k != "artist_id"},
+         "genres": genres_map.get(t["artist_id"], [])}
+        for t in raw_tracks
+    ]
 
     print(f"  Found {len(tracks)} tracks in playlist")
     return tracks
@@ -227,7 +241,7 @@ def batch_embed_songs(cur, conn, pending):
     if not pending:
         return
 
-    CHUNK = 250
+    CHUNK = 75
     print(f"\n  Batch embedding {len(pending)} songs ({(len(pending)-1)//CHUNK+1} request(s))...")
     ids = [p[0] for p in pending]
     texts = [p[1] for p in pending]
@@ -311,7 +325,7 @@ def insert_song(cur, song, analysis, collection_id):
             instrument_credits,
             producer, studio, songwriter, label,
             mood, themes, sonic_fingerprint, fun_fact,
-            collection_id, source, isrc
+            collection_id, source, isrc, spotify_uri
         ) VALUES (
             %s, %s, %s, %s, %s, %s, %s,
             %s, %s, %s, %s, %s,
@@ -322,7 +336,7 @@ def insert_song(cur, song, analysis, collection_id):
             %s,
             %s, %s, %s, %s,
             %s, %s, %s, %s,
-            %s, %s, %s
+            %s, %s, %s, %s
         )
         ON CONFLICT (id) DO NOTHING
     """, (
@@ -360,6 +374,7 @@ def insert_song(cur, song, analysis, collection_id):
         collection_id,
         "spotify_gemini",
         song.get("isrc"),
+        song.get("spotify_uri"),
     ))
     return song_id
 

@@ -97,6 +97,16 @@ export function computeMatches(filter, selectedNode, allNodes, allLinks) {
         if (credits.some(c => [c.make, c.model].filter(Boolean).join(' ') === value)) matches.add(n.id);
       });
       break;
+    case 'mb_location':
+      allNodes.forEach(n => {
+        if (n.id !== selId && n.mb_credits?.location === value) matches.add(n.id);
+      });
+      break;
+    case 'mb_credit':
+      allNodes.forEach(n => {
+        if (n.id !== selId && (n.mb_credits?.credits || []).some(c => c.name === value)) matches.add(n.id);
+      });
+      break;
     case 'nearby_adjacent': {
       if (selectedNode.x === undefined) break;
       const sorted = allNodes
