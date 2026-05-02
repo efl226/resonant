@@ -39,7 +39,7 @@ def normalize_coords(coords):
     return out
 
 
-def run_umap(features, n_neighbors=None, min_dist=0.1, metric="euclidean", label=""):
+def run_umap(features, n_neighbors=None, min_dist=0.1, spread=1.5, metric="euclidean", label=""):
     """Run UMAP on a 2D numpy feature matrix, return normalized (N,2) coords."""
     import umap as umap_lib
 
@@ -55,6 +55,7 @@ def run_umap(features, n_neighbors=None, min_dist=0.1, metric="euclidean", label
         n_components=2,
         n_neighbors=k,
         min_dist=min_dist,
+        spread=spread,
         metric=metric,
         random_state=42,
         low_memory=False,
@@ -243,7 +244,7 @@ def run(collection_id="default", dry_run=False):
     print("\n[1/3] Building SONIC layout...")
     try:
         sonic_feat = build_sonic_features(songs)
-        sonic_coords = run_umap(sonic_feat, label="sonic", min_dist=0.6, n_neighbors=40)
+        sonic_coords = run_umap(sonic_feat, label="sonic", min_dist=0.35, spread=2.0, n_neighbors=40)
         if sonic_coords is not None:
             layouts["sonic"] = sonic_coords
     except Exception as e:
@@ -253,14 +254,14 @@ def run(collection_id="default", dry_run=False):
     print("\n[2/4] Building VIBE layout...")
     try:
         vibe_feat = build_vibe_features(songs)
-        vibe_coords = run_umap(vibe_feat, label="vibe", min_dist=0.6, n_neighbors=40, metric="jaccard")
+        vibe_coords = run_umap(vibe_feat, label="vibe", min_dist=0.35, spread=2.0, n_neighbors=40, metric="jaccard")
         if vibe_coords is not None:
             layouts["vibe"] = vibe_coords
     except Exception as e:
         print(f"  ✗ Vibe layout failed (retrying with euclidean): {e}")
         try:
             vibe_feat2 = build_vibe_features(songs)
-            vibe_coords2 = run_umap(vibe_feat2, label="vibe-fallback", min_dist=0.6, n_neighbors=40)
+            vibe_coords2 = run_umap(vibe_feat2, label="vibe-fallback", min_dist=0.35, spread=2.0, n_neighbors=40)
             if vibe_coords2 is not None:
                 layouts["vibe"] = vibe_coords2
         except Exception as e2:
@@ -270,7 +271,7 @@ def run(collection_id="default", dry_run=False):
     print("\n[3/4] Building DECADE layout...")
     try:
         decade_feat = build_decade_features(songs)
-        decade_coords = run_umap(decade_feat, label="decade", min_dist=0.4, n_neighbors=30)
+        decade_coords = run_umap(decade_feat, label="decade", min_dist=0.3, spread=1.5, n_neighbors=30)
         if decade_coords is not None:
             layouts["decade"] = decade_coords
     except Exception as e:
@@ -280,7 +281,7 @@ def run(collection_id="default", dry_run=False):
     print("\n[4/4] Building DNA layout...")
     try:
         dna_feat = build_dna_features(songs)
-        dna_coords = run_umap(dna_feat, label="dna", min_dist=0.4, n_neighbors=30)
+        dna_coords = run_umap(dna_feat, label="dna", min_dist=0.3, spread=1.5, n_neighbors=30)
         if dna_coords is not None:
             layouts["dna"] = dna_coords
     except Exception as e:

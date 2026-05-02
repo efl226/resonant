@@ -78,11 +78,15 @@ def compute_adaptive_eps(coords, n_songs):
         scale = 1.5
     elif n_songs < 120:
         scale = 1.2
-    else:
+    elif n_songs < 300:
         scale = 1.0
+    elif n_songs < 600:
+        scale = 0.8
+    else:
+        scale = 0.65
 
     eps = avg_knn_dist * scale
-    eps = max(40, min(150, eps))
+    eps = max(25, min(90, eps))  # tighter cap for larger collections
     print(f"  Adaptive eps: {eps:.1f} (avg kNN dist: {avg_knn_dist:.1f}, scale: {scale})")
     return eps
 
@@ -96,15 +100,19 @@ def run_dbscan(coords, n_songs):
     n_noise = list(labels).count(-1)
     print(f"  Found {n_clusters} clusters ({n_noise} unclustered)")
 
-    if n_clusters < 3 and n_songs > 20:
-        print("  Too few clusters, tightening eps...")
-        labels = DBSCAN(eps=eps * 0.7, min_samples=min_samples).fit_predict(coords)
+    # Scale minimum target clusters with collection size
+    min_target = max(5, n_songs // 80)
+    max_target = max(20, n_songs // 40)
+
+    if n_clusters < min_target and n_songs > 20:
+        print(f"  Too few clusters (target ≥{min_target}), tightening eps...")
+        labels = DBSCAN(eps=eps * 0.65, min_samples=min_samples).fit_predict(coords)
         n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
         n_noise = list(labels).count(-1)
         print(f"  Retry: {n_clusters} clusters ({n_noise} unclustered)")
 
-    if n_clusters > 20:
-        print("  Too many clusters, loosening eps...")
+    if n_clusters > max_target:
+        print(f"  Too many clusters (target ≤{max_target}), loosening eps...")
         labels = DBSCAN(eps=eps * 1.4, min_samples=min_samples).fit_predict(coords)
         n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
         n_noise = list(labels).count(-1)

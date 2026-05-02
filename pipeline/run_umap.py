@@ -33,7 +33,8 @@ print("Running UMAP...")
 reducer = umap.UMAP(
     n_components=2,
     n_neighbors=min(40, len(rows) - 1),
-    min_dist=0.5,
+    min_dist=0.4,
+    spread=1.8,
     metric="cosine",
     random_state=42,
 )

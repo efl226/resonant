@@ -3,7 +3,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 // Read collection from URL: ?collection=alex
 function getCollectionId() {
   const params = new URLSearchParams(window.location.search);
-  return params.get('collection') || 'default';
+  return params.get('collection') || 'testuser';
 }
 
 export async function loadGraphData() {
