@@ -383,64 +383,79 @@ export default function App() {
 
   const handleChangeLayout = useCallback((layoutId) => {
     setActiveLayout(layoutId);
-    setGraphData(prev => {
-      const updated = prev.nodes.map(node => {
+
+    // Directly mutate the D3 simulation's live node objects — React state nodes
+    // are different object references from what D3 actually simulates, so updating
+    // state alone never reaches the force simulation.
+    if (graphRef.current) {
+      const simNodes = graphRef.current.graphData().nodes;
+      simNodes.forEach(node => {
         if (graphMode === '3d') {
           const coords = node.layouts3d?.[layoutId];
-          if (coords?.x != null && coords?.y != null && coords?.z != null) {
-            return { ...node, _targetX: coords.x, _targetY: coords.y, _targetZ: coords.z };
+          if (coords?.x != null) {
+            node._targetX = coords.x;
+            node._targetY = coords.y;
+            node._targetZ = coords.z;
           }
-          return node;
+        } else if (layoutId === 'default') {
+          if (node.umap_x != null) {
+            node.x = node.umap_x;
+            node.y = node.umap_y;
+            node._targetX = node.umap_x;
+            node._targetY = node.umap_y;
+          }
+        } else {
+          const coords = node.layouts?.[layoutId];
+          if (coords?.x != null) {
+            node.x = coords.x;
+            node.y = coords.y;
+            node._targetX = coords.x;
+            node._targetY = coords.y;
+          }
         }
-        // 2D mode
-        if (layoutId === 'default') {
-          return { ...node, _targetX: node.umap_x, _targetY: node.umap_y };
-        }
-        const coords = node.layouts?.[layoutId];
-        if (coords?.x != null && coords?.y != null) {
-          return { ...node, _targetX: coords.x, _targetY: coords.y };
-        }
-        return node;
+        node.vx = 0;
+        node.vy = 0;
       });
-      return { ...prev, nodes: updated };
-    });
+      graphRef.current.d3ReheatSimulation();
+    }
   }, [graphMode]);
 
   const handleToggleGraphMode = useCallback(() => {
     const newMode = graphMode === '2d' ? '3d' : '2d';
     setGraphMode(newMode);
 
+    if (!graphRef.current) return;
+    const simNodes = graphRef.current.graphData().nodes;
+
     if (newMode === '3d') {
-      // In 3D, "default" layout doesn't exist — switch to sonic
       const initLayout = activeLayout === 'default' ? 'sonic' : activeLayout;
       setActiveLayout(initLayout);
-      setGraphData(prev => ({
-        ...prev,
-        nodes: prev.nodes.map(node => {
-          const coords = node.layouts3d?.[initLayout];
-          if (coords?.x != null) {
-            return { ...node, _targetX: coords.x, _targetY: coords.y, _targetZ: coords.z };
-          }
-          return node;
-        }),
-      }));
+      simNodes.forEach(node => {
+        const coords = node.layouts3d?.[initLayout];
+        if (coords?.x != null) {
+          node._targetX = coords.x;
+          node._targetY = coords.y;
+          node._targetZ = coords.z;
+          node.vx = 0; node.vy = 0;
+        }
+      });
     } else {
-      // Return to 2D
       const layout2d = activeLayout === 'default' ? 'default' : activeLayout;
-      setGraphData(prev => ({
-        ...prev,
-        nodes: prev.nodes.map(node => {
-          if (layout2d === 'default') {
-            return { ...node, _targetX: node.umap_x, _targetY: node.umap_y, _targetZ: undefined };
-          }
-          const coords = node.layouts?.[layout2d];
-          if (coords?.x != null) {
-            return { ...node, _targetX: coords.x, _targetY: coords.y, _targetZ: undefined };
-          }
-          return node;
-        }),
-      }));
+      simNodes.forEach(node => {
+        const coords = layout2d === 'default'
+          ? { x: node.umap_x, y: node.umap_y }
+          : node.layouts?.[layout2d];
+        if (coords?.x != null) {
+          node.x = coords.x;
+          node.y = coords.y;
+          node._targetX = coords.x;
+          node._targetY = coords.y;
+          node._targetZ = undefined;
+          node.vx = 0; node.vy = 0;
+        }
+      });
     }
+    graphRef.current.d3ReheatSimulation();
   }, [graphMode, activeLayout]);
 
   const { highlightNodes, highlightLinks, filterMatchSets } = useMemo(() => {
