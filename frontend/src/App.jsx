@@ -384,40 +384,54 @@ export default function App() {
   const handleChangeLayout = useCallback((layoutId) => {
     setActiveLayout(layoutId);
 
-    // Directly mutate the D3 simulation's live node objects — React state nodes
-    // are different object references from what D3 actually simulates, so updating
-    // state alone never reaches the force simulation.
-    if (graphRef.current) {
-      const simNodes = graphRef.current.graphData().nodes;
-      simNodes.forEach(node => {
-        if (graphMode === '3d') {
-          const coords = node.layouts3d?.[layoutId];
-          if (coords?.x != null) {
-            node._targetX = coords.x;
-            node._targetY = coords.y;
-            node._targetZ = coords.z;
-          }
-        } else if (layoutId === 'default') {
-          if (node.umap_x != null) {
-            node.x = node.umap_x;
-            node.y = node.umap_y;
-            node._targetX = node.umap_x;
-            node._targetY = node.umap_y;
-          }
-        } else {
-          const coords = node.layouts?.[layoutId];
-          if (coords?.x != null) {
-            node.x = coords.x;
-            node.y = coords.y;
-            node._targetX = coords.x;
-            node._targetY = coords.y;
-          }
-        }
-        node.vx = 0;
-        node.vy = 0;
-      });
-      graphRef.current.d3ReheatSimulation();
+    if (!graphRef.current) {
+      console.warn('[Layout] graphRef.current is null');
+      return;
     }
+    const simNodes = graphRef.current.graphData().nodes;
+    console.log(`[Layout] switching to "${layoutId}", simNodes count: ${simNodes.length}`);
+
+    const sample = simNodes[0];
+    if (sample) {
+      console.log('[Layout] sample node keys:', Object.keys(sample));
+      console.log('[Layout] sample node.layouts:', sample.layouts);
+      console.log('[Layout] sample node.umap_x:', sample.umap_x);
+    }
+
+    let moved = 0;
+    simNodes.forEach(node => {
+      if (graphMode === '3d') {
+        const coords = node.layouts3d?.[layoutId];
+        if (coords?.x != null) {
+          node._targetX = coords.x;
+          node._targetY = coords.y;
+          node._targetZ = coords.z;
+          moved++;
+        }
+      } else if (layoutId === 'default') {
+        if (node.umap_x != null) {
+          node.x = node.umap_x;
+          node.y = node.umap_y;
+          node._targetX = node.umap_x;
+          node._targetY = node.umap_y;
+          moved++;
+        }
+      } else {
+        const coords = node.layouts?.[layoutId];
+        if (coords?.x != null) {
+          node.x = coords.x;
+          node.y = coords.y;
+          node._targetX = coords.x;
+          node._targetY = coords.y;
+          moved++;
+        }
+      }
+      node.vx = 0;
+      node.vy = 0;
+    });
+
+    console.log(`[Layout] repositioned ${moved}/${simNodes.length} nodes`);
+    graphRef.current.d3ReheatSimulation();
   }, [graphMode]);
 
   const handleToggleGraphMode = useCallback(() => {
